@@ -30,7 +30,7 @@
 2. Your application will be tested with POSTMAN.
 3. **No marks will be awarded** , if the work is copied or you have allowed others to copy your work. Warning: Plagiarism means passing off as one&#39;s own the ideas, works, writings, etc., which belong to another person. In accordance with this definition, you are committing plagiarism if you copy the work of another person and turning it in as your own, even if you would have the permission of that person. Plagiarism is a serious offence and disciplinary action will be taken against you. If you are guilty of plagiarism, you may fail all modules in the semester, or even be liable for expulsion.
 
-1. 50% of the marks will be deducted for assignments that are received within ONE (1) calendar day after the submission deadline. No marks will be given thereafter.
+1. 50% of the marks will be educted for assignments that are received within ONE (1) calendar day after the submission deadline. No marks will be given thereafter.
 
 Exceptions to this policy will be given to students with valid LOA on medical or
 
