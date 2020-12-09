@@ -12,8 +12,8 @@
 //'---------------'---------------'
 
 var express = require('express');
-var users = require('../Model/users');
-var categories = require('../Model/categories');
+var users = require('../model/users');
+var categories = require('../model/categories');
 
 var app = express();
 // //PICK ONE USE BODY PARSET OR DONT USE BODY PARSER WILL GET SAME RESULT

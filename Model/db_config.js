@@ -13,7 +13,7 @@
 
 
 const dbUser = 'root';
-const dbPassword = 'kiritowu0818';
+const dbPassword = '';
 const schem = "sp_games";
 
 const mysql = require('mysql');
@@ -21,12 +21,11 @@ const dbconnect = {
     getConnection: (schema = schem) => {
         return mysql.createConnection({
             host: "localhost",
-            user: dbUser,
+            user: dbUser, 
             password: dbPassword ,
             database: schema,// TO cater case of connecting to multiple schema
 						// retain DATE as a string
-            dateStrings: true,
-            multipleStatements:true 
+            dateStrings: true
         });
     }
 };
