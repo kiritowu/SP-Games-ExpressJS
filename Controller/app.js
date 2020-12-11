@@ -12,10 +12,14 @@
 //'---------------'---------------'
 
 var express = require('express');
+const { Validator, ValidationError } = require("express-json-validator-middleware");
+
 var users = require('../model/users');
 var categories = require('../model/categories');
+var tokenAuth = require('../auth/tokenAuth');
 
 var app = express();
+const { validate } = new Validator();
 // //PICK ONE USE BODY PARSET OR DONT USE BODY PARSER WILL GET SAME RESULT
 // const bodyParser = require('body-parser');
 // const urlencodedParser = bodyParser.urlencoded({extended:false});
@@ -38,7 +42,39 @@ app.get("/users/", (req, res) => {
 		res.status(200).send(users);
 	});
 });
-app.post("/users/", (req, res) => {
+var userSchema = {
+	type: "object",
+	required: ["username", "email", "type", "password"],
+	properties: {
+		username: {
+			type: "string",
+			maxLength: 20,
+			minLength: 1
+		},
+		email: {
+			type: "string",
+			format: "email",
+			maxLength: 45,
+			minLength: 1,
+		},
+		password: {
+			type: "string",
+			minLength: 6,
+			maxLength: 20,
+		},
+		type:{
+			type: "string",
+			maxLength: 8,
+			minLength: 5
+		},
+		profile_pic_url:{
+			type: "string",
+			maxLength: 45
+		}
+	},
+};
+
+app.post("/users/", validate({body: userSchema}), (req, res) => {
 	///VALIDATE USER INPUT???////
 	users.createUser(req.body, (err, insertId) => {
 		if (err) {
@@ -48,7 +84,7 @@ app.post("/users/", (req, res) => {
 			});
 			return;
 		}
-		res.status(201).send(insertId);
+		res.status(201).send({"User_id" : insertId});
 	});
 });
 app.get("/users/:id", (req, res) => {
@@ -76,9 +112,64 @@ app.get("/users/:id", (req, res) => {
 		res.status(200).send(user);
 	});
 });
+var userLoginSchema = {
+	type: "object",
+	required: ["email","password"],
+	properties: {
+		email: {
+			type: "string",
+			format: "email",
+			maxLength: 45,
+			minLength: 1,
+		},
+		password: {
+			type: "string",
+			minLength: 6,
+			maxLength: 20,
+		}
+	}
+};
+app.post("/users/login", validate({body : userLoginSchema}) , (req,res)=>{
+	users.userLogin(req.body,(err,user)=>{
+		if(err){
+			if(err.errCode == 401){
+				res.status(401).send({ 
+					"Result": "Unauthorized",
+					"Message": "Please Enter the Correct Email or Password"
+				});
+				return;
+			}
+			res.status(500).send({ 
+				"Result": "Internal Error",
+				"Message": "An Unknown Error have occured. Please Contact our Admin for further assistance."
+			});
+			return;
+		}
+		res.status(200)
+		.header({
+			Authorization : `Bearer ${user.token}`
+		}).send(`Welcome ${user.username}!`);
+	});
+});
+
 //Category Table
-app.post("/category/", (req, res) => {
-	///VALIDATE USER INPUT???////
+var categorySchema = {
+	type : "object",
+	required : ["catname", "description"],
+	properties : {
+		catname : {
+			type : "string",
+			maxLength : 45,
+			minLength : 1
+		},
+		description : {
+			type : "string",
+			maxLength : 512,
+			minLength : 1
+		}
+	}
+};
+app.post("/category/", validate({body : categorySchema }) , (req, res) => {
 	categories.createCategory(req.body, (err) => {
 		if (err) {
 			if (err.errno === 1062) {
@@ -94,7 +185,7 @@ app.post("/category/", (req, res) => {
 		res.status(204).send();
 	});
 });
-app.put("/category/:cat_id", (req, res) => {
+app.put("/category/:cat_id", validate({body : categorySchema }) ,(req, res) => {
 	const cat_id = parseInt(req.params.cat_id);
 	if (isNaN(cat_id)) {
 		res.status(400).send({ 
@@ -126,5 +217,24 @@ app.put("/category/:cat_id", (req, res) => {
 		res.status(204).send();
 	});
 });
+
+app.use(validationErrorMiddleware);
+function validationErrorMiddleware(error, req, res, next) {
+	if (res.headersSent) {
+		return next(error);
+	}
+
+	const isValidationError = error instanceof ValidationError;
+	if (!isValidationError) {
+		return next(error);
+	}
+
+	res.status(400).send({
+		"Result" : "Bad Request",
+		"Message": `${error.validationErrors.body[0].dataPath.slice(1)} ${error.validationErrors.body[0].message}`
+	});
+
+	next();
+}
 
 module.exports = app;

@@ -13,7 +13,7 @@
 
 
 const dbUser = 'root';
-const dbPassword = '';
+const dbPassword = 'kiritowu0818';
 const schem = "sp_games";
 
 const mysql = require('mysql');
