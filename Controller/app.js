@@ -235,6 +235,168 @@ function validationErrorMiddleware(error, req, res, next) {
 	});
 
 	next();
+	
+
 }
 
+
+
+
+//question 6 onwards
+//question 6: Used to add a new game to the database.
+app.post("/game", (req, res) => {
+
+
+    var title = req.body.title;
+    var description = req.body.description;
+    var price = req.body.price;
+    var platform = req.body.platform;
+    var year = req.body.year;
+    var categories = req.body.categories;
+    var cats = categories.split(",")
+    console.log(categories)
+    console.log(typeof (categories))
+
+    model.post_game(title, description, price, platform, year, (err, data) => {
+        if (err) {
+            res.status(500).send();
+            return
+        }
+        model.get_id(title, (err, id) => {
+            if (err) {
+                res.status(500).send({ "Result": "Internal Error" });
+                return
+            }
+            var gameId = id[0].game_id;
+            console.log(gameId);
+            //update the category of the game in the game_category_map one 
+            // when do postman request categories is sent as categories : 2,3 
+            // then slice string to make array 
+            for (var i = 0; i <cats.length; i++) {
+                model.post_category(gameId, cats[i], (err, data) => {
+                    if (err) {
+                        res.status(500).send({ "Result": "Internal Error" })
+                        return
+                    }
+    
+                })
+            }
+            model.get_updatedListing(title, (err, data) => {
+                if (err) {
+                    res.status(500).send({ "Result": "Internal Error" })
+                    return
+                }
+                res.status(200).send(data);
+            })
+        
+    
+        })
+    });
+    
+    
+
+});
+
+//question 7 
+//get games based on platform
+app.get("/games/:platform", (req, res) => {
+    var platform = req.params.platform;
+    model.get_gameOnPlatform(platform, (err, data) => {
+        if (err) {
+            res.status(500).send({ "Result": "Internal Error" });
+            return;
+        }
+        res.status(200).send(data);
+    });
+});
+
+// question 8 delete game based on game id
+app.delete("/game/:id", (req, res) => {
+    const gameId = parseInt(req.params.id);
+    if (isNaN(gameId)) {
+        res.status(400).send();
+        return;
+    }
+
+    model.delete_game(gameId, (err) => {
+        if (err) {
+            res.status(500).send({ "Result": "Internal Error" });
+            return;
+        }
+        console.log("Delete successful")
+        res.status(204).send();
+    });
+});
+
+//question 9 update game
+// can update the title description year title n price
+app.put("/game/:id", (req, res) => {
+    var description = req.body.description;
+    var price = req.body.price;
+    var platform = req.body.platform;
+    var year = req.body.year;
+    var title = req.body.title;
+    const gameId = parseInt(req.params.id);
+    var categories = req.body.categories;
+    var cats = categories.split(",")
+    if (isNaN(gameId)) {
+        res.status(400).send();
+        return;
+    }
+
+    model.update_game(description, price, platform, year, title, gameId, (err) => {
+        if (err) {
+            res.status(500).send({ "Result": "Internal Error" });
+            return;
+        }
+//run the update cat given the length of the category array
+        for (var i = 0; i <cats.length; i++) {
+                model.post_category(gameId, cats[i], (err, data) => {
+                    if (err) {
+                        res.status(500).send({ "Result": "Internal Error" })
+                        return
+                    }
+    
+                })
+            }
+            res.status(200).send("succesful update");
+            //used 200 to see if succesful anot
+        });
+
+    
+});
+
+//question 10 add a new review to the database for given user and game
+app.post("/user/:uid/game/:gid/review/", (req, res) => {
+    var content = req.body.content
+    const userId = parseInt(req.params.uid);
+    if (isNaN(userId)) {
+        res.status(400).send();
+        return;
+    }
+    const gameId = parseInt(req.params.gid);
+    if (isNaN(gameId)) {
+        res.status(400).send();
+        return;
+    }
+    model.post_game(gameId, userId, content, (err, data) => {
+        if (err) {
+            res.status(500).send({ "Result": "Internal Error" });
+            return;
+        }
+        res.status(200).send(data)
+    });
+});
+
+//question 11 get review based on game id
+app.get("/game/:id/review", (req, res) => {
+    var gameId = req.params.id
+    model.retrieve_reviews(gameId, (err, data) => {
+        if (err) {
+            res.status(500).send({ "Result": "Internal Error" });
+            return;
+        }
+        res.status(200).send(data);
+    });
+});
 module.exports = app;
