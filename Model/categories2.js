@@ -1,5 +1,8 @@
 module.exports={
 // question 6 :Used to add a new game to the database.
+    // this includes adding its categories 
+    
+    // part 1 of qn 6 : to post the game and its relevant information ( title , description, price, platform, year)
     post_game: (title,description,price,platform,year, callback) => {
         var conn = db.getConnection();
         conn.connect((err) => {
@@ -11,23 +14,24 @@ module.exports={
                 INSERT INTO sp_games.games (title,description,price,platform,year) VALUES (?,?,?,?,?);
                 
             `;
-            //SELECT * FROM sp_games.games -> cannot liddat if not will affect auto increment yue jian dan yue hao
-                // breifly explain sql code?
+            //SELECT * FROM sp_games.games -> cannot use multiStatements if not will affect auto increment
+      
                 conn.query(sql, [title,description,price,platform,year], (err, data) => {
-                    // breifly explain arguments ? and data returned
+                  // insert the main description of the game
                     conn.end();
                     if (err) {
                         console.error(err);
                         return callback(err, null);
                     } else {
                         return callback(null, data);
-                        // explain the return data is for what one 
+                       
                     }
                 });
             }
         });
     },
-    // get the id of the game 
+    
+    // part 2 of qn6 : to get the id of the game 
     get_id: (title, callback) => {
         var conn = db.getConnection();
         conn.connect((err) => {
@@ -36,11 +40,11 @@ module.exports={
                 return callback(err, null);
             } else {
                 var sql = `
-                SELECT game_id FROM games WHERE title = ?; 
-            `;
+                SELECT game_id FROM games WHERE title = ?; `;
+                // can select based on title since title is unique
             
                 conn.query(sql, [title], (err, data) => {
-                    // breifly explain arguments ? and data returned
+                 
                     conn.end();
                     if (err) {
                         console.error(err);
@@ -48,13 +52,15 @@ module.exports={
                     } else {
                         
                         return callback(null, data);
-                        // explain the return data is for what one 
+                        // this data returned ( containing game id needs to be stored to be reused later to store new category ids )
+                     
                     }
                 });
             }
         });
     },
 
+    //part 3 of qn 6 : to insert the categories into the game_category_map table based on the list of categories 
     // insert into the game_category_map table the based on game id obtained from prev
     post_category: (gameId,category, callback) => {
         var conn = db.getConnection();
@@ -68,20 +74,22 @@ module.exports={
             `;
             console.log(category)
                 conn.query(sql, [gameId,category], (err, data) => {
-                    // breifly explain arguments ? and data returned
+                   // game id obtained from previous function , category is a list of ids that will be inserted in through a for loop
                     conn.end();
                     if (err) {
                         console.error(err);
                         return callback(err, null);
                     } else {
                         return callback(null, data);
-                        // explain the return data is for what one 
+                       
                     }
                 });
             }
         });
     },
 
+    
+    //part 4 of qn 6 : to get the updated game listing of the game added in
     // returns the updated listing with the new game added in
     get_updatedListing: ( title,callback) => {
         var conn = db.getConnection();
@@ -91,9 +99,9 @@ module.exports={
                 return callback(err, null);
             } else {
                 var sql = `
-                SELECT cm.fk_cat_id , c.catname, g.description, g.title, g.year FROM game_category_map cm INNER JOIN games g ON cm.fk_game_id = g.game_id INNER JOIN categories c ON c.cat_id=cm.fk_cat_id WHERE g.title=? ;
+                SELECT  c.catname, g.description, g.title, g.year, g.price, g.game_id FROM game_category_map cm INNER JOIN games g ON cm.fk_game_id = g.game_id INNER JOIN categories c ON c.cat_id=cm.fk_cat_id WHERE g.title=? ;
             `;
-        
+        // inner join the tables so that can see the cat name 
                 conn.query(sql, [title], (err, data) => {
                    
                     conn.end();
@@ -119,7 +127,7 @@ get_gameOnPlatform:(platform,callback)=>{
             console.error(err);
             return callback(err, null);
         } else {
-            var sql = `SELECT g.game_id, g.title, g.title, g.description, g.price, g.platform, g.year, c.catname
+            var sql = `SELECT g.game_id,  g.title, g.description, g.price, g.platform, g.year, c.catname
              FROM games g , categories c ,game_category_map gm WHERE  c.cat_id = gm.fk_cat_id and g.game_id=gm.fk_game_id HAVING g.platform = ?;
         `;
   
@@ -188,7 +196,7 @@ update_game : (description,price,platform,year,title,gameId,callback) =>{
     });
 },
 
-//update the category of the game
+//part 2 of question 9 : update the category of the game
 update_category: (category,gameId,callback) =>{
     var conn = db.getConnection();
     conn.connect((err)=>{
