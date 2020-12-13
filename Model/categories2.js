@@ -1,3 +1,4 @@
+module.exports={
 // question 6 :Used to add a new game to the database.
     post_game: (title,description,price,platform,year, callback) => {
         var conn = db.getConnection();
@@ -261,3 +262,4 @@ retrieve_reviews : (gameId, callback)=>{
         }
     });
 },
+}
