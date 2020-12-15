@@ -6,6 +6,7 @@
 
 const db = require("./db_config");
 
+
 module.exports = {
     createCategory: (category, callback) => {
         var conn = db.getConnection();

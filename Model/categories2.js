@@ -72,7 +72,7 @@ module.exports={
                 var sql = `
                 INSERT INTO game_category_map (fk_game_id,fk_cat_id) VALUES (?,?);  
             `;
-            console.log(category)
+            console.log(category);
                 conn.query(sql, [gameId,category], (err, data) => {
                    // game id obtained from previous function , category is a list of ids that will be inserted in through a for loop
                     conn.end();
@@ -270,4 +270,4 @@ retrieve_reviews : (gameId, callback)=>{
         }
     });
 },
-}
+};
