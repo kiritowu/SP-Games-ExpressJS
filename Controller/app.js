@@ -11,30 +11,66 @@
 //| Admission No. | 2011860       |
 //'---------------'---------------'
 
-var express = require('express');
-const { Validator, ValidationError } = require("express-json-validator-middleware");
+const express = require('express'); //Express router
+const { Validator, ValidationError } = require("express-json-validator-middleware"); //AJV Validation Library
+const fs = require('fs'); //Filestream 
+const multer = require('multer'); //Multer for Image Uploading
+var storage = multer.diskStorage({ //Image path config
+	destination: function (req, file, callback) {
+		callback(null, `${__dirname}/../tmp/images/`);
+	},
+	filename: function (req, file, callback) {
+		const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9) + ".jpg";
+		callback(null, file.fieldname + '-' + uniqueSuffix);
+	}
+});
+var upload = multer({
+	storage: storage, //Image File config
+	fileFilter: (req, file, callback) => {
+		if (file.mimetype !== 'image/jpeg') { //Only allow jpg files to be uplaoded
+			return callback(new Error('File uploaded is not .jpg image file'), false);
+		}
+		callback(null, true);
+	},
+	limits: {
+		fileSize: 1000000, //Maximum 1MB(1000000 Byte) files to be uploaded
+		files: 1 //Maximum one files to be uploaded
+	}
+});
 
+//Models
 var users = require('../model/users_p');
 var categories = require('../model/categories_p');
 var games = require('../model/game_p');
 var reviews = require('../model/reviews_p');
 
+//JWT authentication
 var tokenAuth = require('../auth/tokenAuth');
-
 
 var app = express();
 const { validate } = new Validator();
-// //PICK ONE USE BODY PARSET OR DONT USE BODY PARSER WILL GET SAME RESULT
+
 // const bodyParser = require('body-parser');
 // const urlencodedParser = bodyParser.urlencoded({extended:false});
 // app.use(urlencodedParser); //attach body-parser middelware to decode x-www-form-urlencoded to req.body 
 // app.use(express.json()); //parse req.body to json data
 
+//Middleware for data parsing and stored into req.body
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+//admin
+// Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Niwicm9sZSI6IkFkbWluIiwiaWF0IjoxNjA4MTMxNDY4LCJleHAiOjE2MDgyMTc4Njh9.6Xh4jyPSK0jFX6vvEk-IPkSWVNNdGBXaLARPPKxrTiQ
 
 //Users Table
-app.get("/users/", (req, res) => {
+//question 1: get all user
+app.get("/users/", tokenAuth.verifyToken, (req, res) => {
+	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+		res.status(403).send({
+			"Result":"Unauthorized",
+			"Message":"This is an admin classified action. Please login with an Admin account."
+		});
+		return;
+	}
 	users.getAllUsers((err, users) => {
 		if (err) {
 			res.status(500).send({
@@ -46,9 +82,11 @@ app.get("/users/", (req, res) => {
 		res.status(200).send(users);
 	});
 });
+
+//question 2: insert new user
 var userSchema = {
 	type: "object",
-	required: ["username", "email", "type", "password"],
+	required: ["username", "email", "type", "password","profile_pic_url"],
 	properties: {
 		username: {
 			type: "string",
@@ -77,9 +115,14 @@ var userSchema = {
 		}
 	},
 };
-
-app.post("/users/", validate({ body: userSchema }), (req, res) => {
-	///VALIDATE USER INPUT???////
+app.post("/users/", tokenAuth.verifyToken, validate({ body: userSchema }), (req, res) => {
+	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+		res.status(403).send({
+			"Result":"Unauthorized",
+			"Message":"This is an admin classified action. Please login with an Admin account."
+		});
+		return;
+	}
 	users.createUser(req.body, (err, insertId) => {
 		if (err) {
 			res.status(500).send({
@@ -91,7 +134,9 @@ app.post("/users/", validate({ body: userSchema }), (req, res) => {
 		res.status(201).send({ "User_id": insertId });
 	});
 });
-app.get("/users/:id", (req, res) => {
+
+//question 3: get user with specific id
+app.get("/users/:id", tokenAuth.verifyToken, (req, res) => {
 	const id = parseInt(req.params.id);
 	if (isNaN(id)) {
 		res.status(400).send({
@@ -119,6 +164,8 @@ app.get("/users/:id", (req, res) => {
 		res.status(200).send(user);
 	});
 });
+
+//Advance Feature 3: User login
 var userLoginSchema = {
 	type: "object",
 	required: ["email", "password"],
@@ -160,6 +207,7 @@ app.post("/users/login", validate({ body: userLoginSchema }), (req, res) => {
 });
 
 //Category Table
+//question 4: insert new category
 var categorySchema = {
 	type: "object",
 	required: ["catname", "description"],
@@ -176,7 +224,14 @@ var categorySchema = {
 		}
 	}
 };
-app.post("/category/", validate({ body: categorySchema }), (req, res) => {
+app.post("/category/", tokenAuth.verifyToken, validate({ body: categorySchema }), (req, res) => {
+	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+		res.status(403).send({
+			"Result":"Unauthorized",
+			"Message":"This is an admin classified action. Please login with an Admin account."
+		});
+		return;
+	}
 	categories.createCategory(req.body, (err) => {
 		if (err) {
 			if (err.errno === 1062) {
@@ -195,7 +250,16 @@ app.post("/category/", validate({ body: categorySchema }), (req, res) => {
 		res.status(204).send();
 	});
 });
-app.put("/category/:cat_id", validate({ body: categorySchema }), (req, res) => {
+
+//question 5: update category
+app.put("/category/:cat_id", tokenAuth.verifyToken, validate({ body: categorySchema }), (req, res) => {
+	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+		res.status(403).send({
+			"Result":"Unauthorized",
+			"Message":"This is an admin classified action. Please login with an Admin account."
+		});
+		return;
+	}
 	const cat_id = parseInt(req.params.cat_id);
 	if (isNaN(cat_id)) {
 		res.status(400).send({
@@ -232,63 +296,12 @@ app.put("/category/:cat_id", validate({ body: categorySchema }), (req, res) => {
 });
 
 //Game Table
-//question 6 onwards
 //question 6: Used to add a new game to the database.
-// app.post("/game", (req, res) => {
-
-
-// 	var title = req.body.title;
-// 	var description = req.body.description;
-// 	var price = req.body.price;
-// 	var platform = req.body.platform;
-// 	var year = req.body.year;
-// 	var categories = req.body.categories;
-// 	var cats = categories.split(",");
-// 	console.log(categories);
-// 	console.log(typeof (categories));
-
-// 	model.post_game(title, description, price, platform, year, (err, data) => {
-// 		if (err) {
-// 			res.status(500).send();
-// 			return;
-// 		}
-// 		model.get_id(title, (err, id) => {
-// 			if (err) {
-// 				res.status(500).send({ "Result": "Internal Error" });
-// 				return;
-// 			}
-// 			var gameId = id[0].game_id;
-// 			console.log(gameId);
-// 			//update the category of the game in the game_category_map one 
-// 			// when do postman request categories is sent as categories : 2,3 
-// 			// then slice string to make array 
-// 			for (var i = 0; i < cats.length; i++) {
-// 				model.post_category(gameId, cats[i], (err, data) => {
-// 					if (err) {
-// 						res.status(500).send({ "Result": "Internal Error" });
-// 						return;
-// 					}
-
-// 				});
-// 			}
-// 			model.get_updatedListing(title, (err, data) => {
-// 				if (err) {
-// 					res.status(500).send({ "Result": "Internal Error" });
-// 					return;
-// 				}
-// 				res.status(200).send(data);
-// 			});
-
-
-// 		});
-// 	});
-
-// });
-var gameSchema={
+var gameSchema = {
 	type: "object",
 	required: ["title", "description", "price", "platform", "year", "categories"],
 	properties: {
-		title:{
+		title: {
 			type: "string",
 			maxLength: 45,
 			minLength: 1
@@ -311,16 +324,23 @@ var gameSchema={
 		},
 		categories: {
 			type: "array",
-			items: {type: "number"},
+			items: { type: "number" },
 			minItems: 1,
 			additionalItems: true
 		}
 	}
 };
-app.post("/game/", validate({ body: gameSchema }), (req, res) => {
+app.post("/game/", tokenAuth.verifyToken, validate({ body: gameSchema }), (req, res) => {
+	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+		res.status(403).send({
+			"Result":"Unauthorized",
+			"Message":"This is an admin classified action. Please login with an Admin account."
+		});
+		return;
+	}
 	games.createGame(req.body, (err, gameid) => {
 		if (err) {
-			if (err.errno === 1062){
+			if (err.errno === 1062) {
 				res.status(422).send({
 					"Result": "Unprocessable Entity",
 					"Message": "The game name provided already exists"
@@ -345,8 +365,7 @@ app.post("/game/", validate({ body: gameSchema }), (req, res) => {
 	});
 });
 
-//question 7 
-//get games based on platform
+//question 7: get games based on platform
 app.get("/games/:platform", (req, res) => {
 	var platform = req.params.platform;
 	games.readGamesByPlatform(platform, (err, games) => {
@@ -357,7 +376,7 @@ app.get("/games/:platform", (req, res) => {
 			});
 			return;
 		}
-		if(games.length === 0){
+		if (games.length === 0) {
 			res.status(404).send({
 				"Result": "Not Found",
 				"Message": "Game Platform is not found. Please try other platform."
@@ -369,7 +388,14 @@ app.get("/games/:platform", (req, res) => {
 });
 
 // question 8 delete game based on game id
-app.delete("/game/:id", (req, res) => {
+app.delete("/game/:id", tokenAuth.verifyToken, (req, res) => {
+	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+		res.status(403).send({
+			"Result":"Unauthorized",
+			"Message":"This is an admin classified action. Please login with an Admin account."
+		});
+		return;
+	}
 	var gameId = parseInt(req.params.id);
 	if (isNaN(gameId)) {
 		res.status(400).send({
@@ -387,7 +413,7 @@ app.delete("/game/:id", (req, res) => {
 			});
 			return;
 		}
-		if (affectedRows === 0){
+		if (affectedRows === 0) {
 			res.status(404).send({
 				"Result": "Not Found",
 				"Message": "GameID is not found. Please try other ID."
@@ -398,41 +424,15 @@ app.delete("/game/:id", (req, res) => {
 	});
 });
 
-//question 9 update game
-// can update the title description year title n price
-// app.put("/game/:id", (req, res) => {
-// 	var description = req.body.description;
-// 	var price = req.body.price;
-// 	var platform = req.body.platform;
-// 	var year = req.body.year;
-// 	var title = req.body.title;
-// 	const gameId = parseInt(req.params.id);
-// 	var categories = req.body.categories;
-// 	var cats = categories.split(",");
-// 	if (isNaN(gameId)) {
-// 		res.status(400).send();
-// 		return;
-// 	}
-
-// 	model.update_game(description, price, platform, year, title, gameId, (err) => {
-// 		if (err) {
-// 			res.status(500).send({ "Result": "Internal Error" });
-// 			return;
-// 		}
-// 		//run the update cat given the length of the category array
-// 		for (var i = 0; i < cats.length; i++) {
-// 			model.post_category(gameId, cats[i], (err) => {
-// 				if (err) {
-// 					res.status(500).send({ "Result": "Internal Error" });
-// 					return;
-// 				}
-// 			});
-// 		}
-// 		res.status(200).send("succesful update");
-// 		//used 200 to see if succesful anot
-// 	});
-// });
-app.put("/game/:id", validate({ body: gameSchema }), (req, res) => {
+//question 9: update game
+app.put("/game/:id", tokenAuth.verifyToken, validate({ body: gameSchema }), (req, res) => {
+	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+		res.status(403).send({
+			"Result":"Unauthorized",
+			"Message":"This is an admin classified action. Please login with an Admin account."
+		});
+		return;
+	}
 	const gameId = parseInt(req.params.id);
 	if (isNaN(gameId)) {
 		res.status(400).send();
@@ -448,8 +448,8 @@ app.put("/game/:id", validate({ body: gameSchema }), (req, res) => {
 				});
 			}
 			res.status(500).send({
-				"Result": "Not Found",
-				"Message": "GameID is not found. Please try other ID."
+				"Result": "Internal Error",
+				"Message": "An Unknown Error have occured. Please Contact our Admin for further assistance."
 			});
 			return;
 		}
@@ -457,25 +457,25 @@ app.put("/game/:id", validate({ body: gameSchema }), (req, res) => {
 	});
 });
 
-
+//Review Table
 //question 10 add a new review to the database for given user and game
 var reviewSchema = {
-	type : "object",
+	type: "object",
 	required: ["content", "rating"],
 	properties: {
-		content:{
-			type : "string",
+		content: {
+			type: "string",
 			minLength: 1,
 			maxLength: 512
 		},
-		rating:{
+		rating: {
 			type: "number",
 			minimum: 0,
 			maximum: 5
 		}
 	}
 };
-app.post("/user/:uid/game/:gid/review/", validate({ body: reviewSchema }), (req, res) => {
+app.post("/user/:uid/game/:gid/review/", tokenAuth.verifyToken, validate({ body: reviewSchema }), (req, res) => {
 	var content = req.body.content;
 	const userId = parseInt(req.params.uid);
 	if (isNaN(userId)) {
@@ -496,8 +496,8 @@ app.post("/user/:uid/game/:gid/review/", validate({ body: reviewSchema }), (req,
 	reviews.createReview(gameId, userId, review, (err, data) => {
 		if (err) {
 			res.status(500).send({
-				"Result": "Not Found",
-				"Message": "GameID is not found. Please try other ID."
+				"Result": "Internal Error",
+				"Message": "An Unknown Error have occured. Please Contact our Admin for further assistance."
 			});
 			return;
 		}
@@ -518,12 +518,12 @@ app.get("/game/:id/review", (req, res) => {
 	reviews.readReviews(gameId, (err, data) => {
 		if (err) {
 			res.status(500).send({
-				"Result": "Not Found",
-				"Message": "GameID is not found. Please try other ID."
+				"Result": "Internal Error",
+				"Message": "An Unknown Error have occured. Please Contact our Admin for further assistance."
 			});
 			return;
 		}
-		if(data.length === 0){
+		if (data.length === 0) {
 			res.status(404).send({
 				"Result": "Not Found",
 				"Message": "Reviews for this game does not exists."
@@ -534,23 +534,86 @@ app.get("/game/:id/review", (req, res) => {
 	});
 });
 
+
+//Advance Feature 1: Upload & Retrival of Images
+app.post("/upload", upload.single('pic'), (req, res) => {
+	res.send();
+});
+app.get("/pic", (req, res) => {
+	var filename = req.body.name;
+	var path = `${__dirname}/../tmp/images/` + filename;
+	fs.readFile(path, (err, data) => {
+		if (err) {
+			console.error(err);
+			if (err.errno === -4058) {
+				return res.status(404).send({
+					"Result": "Not Found",
+					"Message": "The image or path cannot be found. Please try other Image."
+				});
+			}
+			return res.status(500).send({
+				"Result": "Internal Error",
+				"Message": "An Unknown Error have occured. Please Contact our Admin for further assistance."
+			});
+		}
+		res.contentType('image/jpeg').send(data);
+	});
+});
+
+
+//Error Handling
 //JSON validation Error Handling Middleware
 app.use(validationErrorMiddleware);
-function validationErrorMiddleware(error, req, res, next) {
+function validationErrorMiddleware(err, req, res, next) {
 	if (res.headersSent) {
-		return next(error);
+		return next(err);
 	}
 
-	const isValidationError = error instanceof ValidationError;
+	const isValidationError = err instanceof ValidationError;
 	if (!isValidationError) {
-		return next(error);
+		return next(err);
 	}
 
 	res.status(400).send({
 		"Result": "Bad Request",
-		"Message": `${error.validationErrors.body[0].dataPath.slice(1)} ${error.validationErrors.body[0].message}`
+		"Message": `${err.validationErrors.body[0].dataPath.slice(1)} ${err.validationErrors.body[0].message}`
 	});
 
 	next();
 }
+app.use(imageUploadingErrorMiddleware);
+function imageUploadingErrorMiddleware(err, req, res, next) {
+	if (res.headersSent) {
+		return next(err);
+	}
+	const isMulterError = err instanceof multer.MulterError;
+	if (!isMulterError) {
+		return next(err);
+	}
+
+	res.status(400).send({
+		"Result": "Bad Request",
+		"Message": err.message
+	});
+
+	next();
+}
+app.use(unknownErrorHandling);
+function unknownErrorHandling(err, req, res, next) {
+	console.error(err);
+	if (res.headersSent) {
+		return next(err);
+	}
+	if (err.message) {
+		return res.status(500).send({
+			"Result": "Internal Error",
+			"Message": err.message
+		});
+	}
+	res.status(500).send({
+		"Result": "Internal Error",
+		"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
+	});
+}
+
 module.exports = app;

@@ -4,7 +4,6 @@ var config = require('../config');
 module.exports = {
     verifyToken: (req, res, next) => {
         // console.log(req.headers);
-
         var token = req.headers.authorization; //retrieve authorization header’s content
         // console.log(token);
 
@@ -19,9 +18,9 @@ module.exports = {
                     res.status(403);
                     return res.send({auth: 'false', message: 'Not authorized!'});
                 } else {
-
+                    console.log(decoded);
                     req.user_id = decoded.user_id; //decode the userid and store in req for use
-                    req.type = decoded.type; //decode the role and store in req for use
+                    req.role = decoded.role; //decode the role and store in req for use
                     next();
                 }
 
