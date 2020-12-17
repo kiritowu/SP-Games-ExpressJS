@@ -18,8 +18,8 @@ module.exports = {
                     res.status(403);
                     return res.send({auth: 'false', message: 'Not authorized!'});
                 } else {
-                    console.log(decoded);
-                    req.user_id = decoded.user_id; //decode the userid and store in req for use
+                    // console.log(decoded);
+                    req.user_id = decoded.id; //decode the userid and store in req for use
                     req.role = decoded.role; //decode the role and store in req for use
                     next();
                 }
@@ -27,11 +27,12 @@ module.exports = {
             });
         }
     },
-    generateToken: async (user_id, type, expires = 86400) => {
+    generateToken: async (user_id, role, expires = 86400) => {
+        if(user_id == undefined || role == undefined) throw new Error("User_id or Role is undefined");
         var payload = {
             id: user_id,
-            role: type
-        };
+            role: role
+        }; 
         return jwt.sign(payload, config.key, { expiresIn: expires });
     }
 };

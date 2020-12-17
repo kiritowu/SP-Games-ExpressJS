@@ -31,9 +31,9 @@ module.exports = {
     createUser: (user, callback) => {
         var result;
         var username = user.username;
-        var email = user.email;
-        var type = user.type;
-        var profile_pic_url = user.profile_pic_url;
+        var email = user.email.toLowerCase(); //convert email into lower cases since email is not case-sensitive
+        var type = user.type[0].toUpperCase() + user.type.slice(1).toLowerCase(); //Capitalize the type 
+        var profile_pic_url = user.profile_pic_url.toLowerCase(); 
         var raw_pwd = user.password;
         conn.connect()
             .then(() => {
@@ -99,6 +99,9 @@ module.exports = {
                 return conn.query(userLoginSQL, [email]);
             }).then((data) => {
                 userCredential = data[0];
+                if (userCredential === undefined) {
+                    throw { errCode: 401, message: "Wrong Email! Please try again!" };
+                }
                 type = userCredential.type;
                 user_id = userCredential.user_id;
                 username = userCredential.username;
@@ -106,20 +109,15 @@ module.exports = {
             }, (err) => {
                 return conn.close().then(() => { throw err; });
             }).then(() => {
-                if (userCredential == null) {
-                    throw { errCode: 401, message: "Wrong Email! Please try again!"};
-                }
-                else {
-                    var hashed_pwd = userCredential.password;
-                    var salt = userCredential.salt;
-                    return pwdAuth.validateUserAuth(raw_pwd, hashed_pwd, salt);
-                }
+                var hashed_pwd = userCredential.password;
+                var salt = userCredential.salt;
+                return pwdAuth.validateUserAuth(raw_pwd, hashed_pwd, salt);
             }).then((authorised) => {
                 if (authorised) {
                     return tokenAuth.generateToken(user_id, type);
                 }
                 else {
-                    throw { errCode: 401 , message: "Wrong Password! Please try again!"};
+                    throw { errCode: 401, message: "Wrong Password! Please try again!" };
                 }
             }).then(token => {
                 callback(null, { token: token, username: username });

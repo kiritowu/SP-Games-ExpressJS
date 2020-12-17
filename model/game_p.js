@@ -23,10 +23,10 @@ module.exports = {
             }).then((data) => {
                 game_id = data.insertId;
                 var createCategoryMappingSQL = `
-                INSERT INTO 
-                game_category_map 
-                (fk_game_id,fk_cat_id) 
-                VALUES (?,?);
+                    INSERT INTO 
+                    game_category_map 
+                    (fk_game_id,fk_cat_id) 
+                    VALUES (?,?);
                 `;
                 return Promise.all(categories.map(category => {
                     return conn.query(createCategoryMappingSQL, [game_id, category]);
@@ -38,6 +38,7 @@ module.exports = {
             }).then(() => {
                 callback(null, game_id);
             }).catch((err) => {
+                if(game_id) err['Inserted_game_id']=game_id;
                 console.error(err);
                 callback(err, null);
             });
@@ -91,6 +92,7 @@ module.exports = {
     },
     //Qns 9: Update game listing based on ID and update the category
     updateGames: (gameId, game, callback) => {
+        var result;
         var description = game.description;
         var price = game.price;
         var platform = game.platform;
@@ -107,13 +109,21 @@ module.exports = {
                 WHERE game_id = ?;  
                 `;
                 return conn.query(updateGamesSQL, [description, price, platform, year, title, gameId]);
-            })
-            .then(() => {
-                var updateGameCategoriesMapping = `
-                UPDATE 
-                game_category_map  
-                SET fk_cat_id=? 
+            }).then(()=>{
+                var deleteCategoryMapping =`
+                DELETE FROM
+                game_category_map
                 WHERE fk_game_id = ?;
+                `
+                return conn.query(deleteCategoryMapping, [gameId]);
+            })
+            .then((data) => {
+                result = data;
+                var updateGameCategoriesMapping = `
+                INSERT INTO 
+                game_category_map  
+                (fk_cat_id, fk_game_id)
+                VALUES(?,?);
                 `;
                 return Promise.all(categories.map(category => {
                     return conn.query(updateGameCategoriesMapping, [category, gameId]);
@@ -123,9 +133,9 @@ module.exports = {
             }, (err) => {
                 return conn.close().then(() => { throw err; });
             }).then(() => {
-                callback(null);
+                callback(null, result.affectedRows);
             }).catch((err) => {
-                console.error(err);
+                console.error(err, null);
                 callback(err);
             });
     },

@@ -62,12 +62,12 @@ app.use(express.json());
 // Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Niwicm9sZSI6IkFkbWluIiwiaWF0IjoxNjA4MTMxNDY4LCJleHAiOjE2MDgyMTc4Njh9.6Xh4jyPSK0jFX6vvEk-IPkSWVNNdGBXaLARPPKxrTiQ
 
 //Users Table
-//question 1: get all user
+//question 1: Get all user
 app.get("/users/", tokenAuth.verifyToken, (req, res) => {
-	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
-			"Result":"Unauthorized",
-			"Message":"This is an admin classified action. Please login with an Admin account."
+			"Result": "Unauthorized",
+			"Message": "This is an admin classified action. Please login with an Admin account."
 		});
 		return;
 	}
@@ -79,14 +79,27 @@ app.get("/users/", tokenAuth.verifyToken, (req, res) => {
 			});
 			return;
 		}
-		res.status(200).send(users);
+
+		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+			.then(token => {
+				res.header({
+					Authorization: `Bearer ${token}` //Include Bearer JWT as header
+				}).set('Cache-control', 'private, max-age=86400').status(200).send(users); //Cache the header for 86400s (24 Hour).send(users);
+			})
+			.catch(err => {
+				console.error(err);
+				return res.status(500).send({
+					"Result": "Internal Error",
+					"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
+				});
+			});
 	});
 });
 
-//question 2: insert new user
+//question 2: Insert new user
 var userSchema = {
 	type: "object",
-	required: ["username", "email", "type", "password","profile_pic_url"],
+	required: ["username", "email", "type", "password", "profile_pic_url"],
 	properties: {
 		username: {
 			type: "string",
@@ -116,26 +129,44 @@ var userSchema = {
 	},
 };
 app.post("/users/", tokenAuth.verifyToken, validate({ body: userSchema }), (req, res) => {
-	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
-			"Result":"Unauthorized",
-			"Message":"This is an admin classified action. Please login with an Admin account."
+			"Result": "Unauthorized",
+			"Message": "This is an admin classified action. Please login with an Admin account."
 		});
 		return;
 	}
 	users.createUser(req.body, (err, insertId) => {
 		if (err) {
+			if(err.errno === 1062){
+				res.status(422).send({
+					"Result": "Unprocessable Entity",
+					"Message": "The username or email provided already exists. Please try other username or email."
+				});
+				return;
+			}
 			res.status(500).send({
 				"Result": "Internal Error",
 				"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
 			});
 			return;
 		}
-		res.status(201).send({ "User_id": insertId });
+		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+			.then(token => {
+				res.header({
+					Authorization: `Bearer ${token}` //Include Bearer JWT as header
+				}).set('Cache-control', 'private, max-age=86400').status(201).send({ "User_id": insertId }); //Cache the header for 86400s (24 Hour).send(users);
+			}).catch(err => {
+				console.error(err);
+				return res.status(500).send({
+					"Result": "Internal Error",
+					"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
+				});
+			});
 	});
 });
 
-//question 3: get user with specific id
+//question 3: Get user with specific id
 app.get("/users/:id", tokenAuth.verifyToken, (req, res) => {
 	const id = parseInt(req.params.id);
 	if (isNaN(id)) {
@@ -157,11 +188,24 @@ app.get("/users/:id", tokenAuth.verifyToken, (req, res) => {
 		if (user.length === 0) {
 			res.status(404).send({
 				"Result": "Not Found",
-				"Message": "user does not exists. Please try other user."
+				"Message": "User Does Not Exists. Please Try other User."
 			});
 			return;
 		}
-		res.status(200).send(user);
+		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+			.then(token => {
+				res.header({
+					Authorization: `Bearer ${token}` //Include Bearer JWT as header
+				}).set('Cache-control', 'private, max-age=86400').status(200).send(user); //Cache the header for 86400s (24 Hour).send(users);
+			})
+			.catch(err => {
+				console.error(err);
+				return res.status(500).send({
+					"Result": "Internal Error",
+					"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
+				});
+			});
+
 	});
 });
 
@@ -201,13 +245,14 @@ app.post("/users/login", validate({ body: userLoginSchema }), (req, res) => {
 			return res.status(200)
 				.header({
 					Authorization: `Bearer ${user.token}`
-				}).send(`Welcome ${user.username}!`);
+				}).set('Cache-control', 'private, max-age=86400') //Cache the header for 86400s (24 Hour)
+				.send(`Welcome ${user.username}!`);
 		}
 	});
 });
 
 //Category Table
-//question 4: insert new category
+//question 4: Insert new category
 var categorySchema = {
 	type: "object",
 	required: ["catname", "description"],
@@ -225,10 +270,10 @@ var categorySchema = {
 	}
 };
 app.post("/category/", tokenAuth.verifyToken, validate({ body: categorySchema }), (req, res) => {
-	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
-			"Result":"Unauthorized",
-			"Message":"This is an admin classified action. Please login with an Admin account."
+			"Result": "Unauthorized",
+			"Message": "This is an admin classified action. Please login with an Admin account."
 		});
 		return;
 	}
@@ -237,7 +282,7 @@ app.post("/category/", tokenAuth.verifyToken, validate({ body: categorySchema })
 			if (err.errno === 1062) {
 				res.status(422).send({
 					"Result": "Unprocessable Entity",
-					"Message": "The category name provided already exists"
+					"Message": "The Category Name Provided already Exists. Please try other Category Name."
 				});
 				return;
 			}
@@ -247,16 +292,28 @@ app.post("/category/", tokenAuth.verifyToken, validate({ body: categorySchema })
 			});
 			return;
 		}
-		res.status(204).send();
+		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+			.then(token => {
+				res.header({
+					Authorization: `Bearer ${token}` //Include Bearer JWT as header
+				}).set('Cache-control', 'private, max-age=86400').status(204).send(); //Cache the header for 86400s (24 Hour).send(users);
+			})
+			.catch(err => {
+				console.error(err);
+				return res.status(500).send({
+					"Result": "Internal Error",
+					"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
+				});
+			});
 	});
 });
 
-//question 5: update category
+//question 5: Update category
 app.put("/category/:cat_id", tokenAuth.verifyToken, validate({ body: categorySchema }), (req, res) => {
-	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
-			"Result":"Unauthorized",
-			"Message":"This is an admin classified action. Please login with an Admin account."
+			"Result": "Unauthorized",
+			"Message": "This is an admin classified action. Please login with an Admin account."
 		});
 		return;
 	}
@@ -291,7 +348,19 @@ app.put("/category/:cat_id", tokenAuth.verifyToken, validate({ body: categorySch
 			});
 			return;
 		}
-		res.status(204).send();
+		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+			.then(token => {
+				res.header({
+					Authorization: `Bearer ${token}` //Include Bearer JWT as header
+				}).set('Cache-control', 'private, max-age=86400').status(204).send(); //Cache the header for 86400s (24 Hour).send(users);
+			})
+			.catch(err => {
+				console.error(err);
+				return res.status(500).send({
+					"Result": "Internal Error",
+					"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
+				});
+			});
 	});
 });
 
@@ -331,10 +400,10 @@ var gameSchema = {
 	}
 };
 app.post("/game/", tokenAuth.verifyToken, validate({ body: gameSchema }), (req, res) => {
-	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
-			"Result":"Unauthorized",
-			"Message":"This is an admin classified action. Please login with an Admin account."
+			"Result": "Unauthorized",
+			"Message": "This is an admin classified action. Please login with an Admin account."
 		});
 		return;
 	}
@@ -350,7 +419,8 @@ app.post("/game/", tokenAuth.verifyToken, validate({ body: gameSchema }), (req, 
 			if (err.errno === 1452) {
 				return res.status(422).send({
 					"Result": "Unprocessable Entity",
-					"Message": "The categories does not exist"
+					"Message": "The categories does not exist.",
+					"Inserted_game_id" : err.Inserted_game_id
 				});
 			}
 			res.status(500).send({
@@ -359,9 +429,21 @@ app.post("/game/", tokenAuth.verifyToken, validate({ body: gameSchema }), (req, 
 			});
 			return;
 		}
-		return res.status(201).send({
-			"gameid": gameid
-		});
+		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+			.then(token => {
+				res.header({
+					Authorization: `Bearer ${token}` //Include Bearer JWT as header
+				}).set('Cache-control', 'private, max-age=86400').status(201).send({
+					"gameid": gameid
+				}); //Cache the header for 86400s (24 Hour).send(users);
+			})
+			.catch(err => {
+				console.error(err);
+				return res.status(500).send({
+					"Result": "Internal Error",
+					"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
+				});
+			});
 	});
 });
 
@@ -389,10 +471,10 @@ app.get("/games/:platform", (req, res) => {
 
 // question 8 delete game based on game id
 app.delete("/game/:id", tokenAuth.verifyToken, (req, res) => {
-	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
-			"Result":"Unauthorized",
-			"Message":"This is an admin classified action. Please login with an Admin account."
+			"Result": "Unauthorized",
+			"Message": "This is an admin classified action. Please login with an Admin account."
 		});
 		return;
 	}
@@ -420,16 +502,28 @@ app.delete("/game/:id", tokenAuth.verifyToken, (req, res) => {
 			});
 			return;
 		}
-		res.status(204).send();
+		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+			.then(token => {
+				res.header({
+					Authorization: `Bearer ${token}` //Include Bearer JWT as header
+				}).set('Cache-control', 'private, max-age=86400').status(204).send(); //Cache the header for 86400s (24 Hour).send(users);
+			})
+			.catch(err => {
+				console.error(err);
+				return res.status(500).send({
+					"Result": "Internal Error",
+					"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
+				});
+			});
 	});
 });
 
 //question 9: update game
 app.put("/game/:id", tokenAuth.verifyToken, validate({ body: gameSchema }), (req, res) => {
-	if(req.role !== "Admin"){ //Only Admin can access the content or perform the query
+	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
-			"Result":"Unauthorized",
-			"Message":"This is an admin classified action. Please login with an Admin account."
+			"Result": "Unauthorized",
+			"Message": "This is an admin classified action. Please login with an Admin account."
 		});
 		return;
 	}
@@ -439,13 +533,21 @@ app.put("/game/:id", tokenAuth.verifyToken, validate({ body: gameSchema }), (req
 		return;
 	}
 
-	games.updateGames(gameId, req.body, (err) => {
+	games.updateGames(gameId, req.body, (err,affectedRows) => {
 		if (err) {
-			if (err.errno === 1452) {
-				return res.status(422).send({
+			if (err.errno === 1062) {
+				res.status(422).send({
 					"Result": "Unprocessable Entity",
-					"Message": "The categories does not exist"
+					"Message": "The game name provided already exists"
 				});
+				return;
+			}
+			if (err.errno === 1452) {
+				res.status(422).send({
+					"Result": "Unprocessable Entity",
+					"Message": "The categories does not exist."
+				});
+				return;
 			}
 			res.status(500).send({
 				"Result": "Internal Error",
@@ -453,7 +555,19 @@ app.put("/game/:id", tokenAuth.verifyToken, validate({ body: gameSchema }), (req
 			});
 			return;
 		}
-		res.status(204).send();
+		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+			.then(token => {
+				res.header({
+					Authorization: `Bearer ${token}` //Include Bearer JWT as header
+				}).set('Cache-control', 'private, max-age=86400').status(204).send(); //Cache the header for 86400s (24 Hour).send(users);
+			})
+			.catch(err => {
+				console.error(err);
+				return res.status(500).send({
+					"Result": "Internal Error",
+					"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
+				});
+			});
 	});
 });
 
@@ -476,7 +590,6 @@ var reviewSchema = {
 	}
 };
 app.post("/user/:uid/game/:gid/review/", tokenAuth.verifyToken, validate({ body: reviewSchema }), (req, res) => {
-	var content = req.body.content;
 	const userId = parseInt(req.params.uid);
 	if (isNaN(userId)) {
 		res.status(400).send({
@@ -493,15 +606,34 @@ app.post("/user/:uid/game/:gid/review/", tokenAuth.verifyToken, validate({ body:
 		});
 		return;
 	}
-	reviews.createReview(gameId, userId, review, (err, data) => {
+	reviews.createReview(gameId, userId, req.body, (err, reviewID) => {
 		if (err) {
+			if(err.errno == 1452){
+				res.status(422).send({
+					"Result": "Unprocessable Entity",
+					"Message": "The Game or User does not exist."
+				});
+				return;
+			}
 			res.status(500).send({
 				"Result": "Internal Error",
 				"Message": "An Unknown Error have occured. Please Contact our Admin for further assistance."
 			});
 			return;
 		}
-		res.status(200).send(data);
+		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+			.then(token => {
+				res.header({
+					Authorization: `Bearer ${token}` //Include Bearer JWT as header
+				}).set('Cache-control', 'private, max-age=86400').status(201).send({"reviewid": reviewID}); //Cache the header for 86400s (24 Hour).send(users);
+			})
+			.catch(err => {
+				console.error(err);
+				return res.status(500).send({
+					"Result": "Internal Error",
+					"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
+				});
+			});
 	});
 });
 

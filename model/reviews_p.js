@@ -6,24 +6,24 @@ module.exports = {
     createReview: (gameID, userId, review, callback) => {
         var result;
         var content = review.content;
+        var rating = review.rating;
         conn.connect()
             .then(() => {
                 var createReviewSQL = `
                 INSERT INTO 
                 reviews 
-                (fk_user_id,fk_game_id,content) 
+                (fk_user_id,fk_game_id,content,rating) 
                 VALUES 
-                (?,?,?) 
-                WHERE fk_user_id = ? , fk_game_id = ?
+                (?,?,?,?);
                 `;
-                return conn.query(createReviewSQL, [userId, gameID, content, userId, gameID]);
+                return conn.query(createReviewSQL, [userId, gameID, content, rating]);
             }).then((data) => {
                 result = data;
                 return conn.close();
             }, (err) => {
                 return conn.close().then(() => { throw err; });
             }).then(() => {
-                callback(null, result);
+                callback(null, result.insertId);
             }).catch((err) => {
                 console.error(err);
                 callback(err, null);
