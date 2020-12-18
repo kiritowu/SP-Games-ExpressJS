@@ -53,7 +53,7 @@ module.exports = {
             }, (err) => {
                 return conn.close().then(() => { throw err; });
             }).then(() => {
-                callback(null, result.insertId);
+                callback(null, {"insertId": result.insertId,"type":type});
             }).catch((err) => {
                 console.error(err);
                 callback(err, null);
@@ -83,9 +83,9 @@ module.exports = {
                 callback(err, null);
             });
     },
-    //Qns 12: Login user with the credential
+    //Advance Feature 3: Login user with the credential
     userLogin: (loginCredential, callback) => {
-        var email = loginCredential.email;
+        var email = loginCredential.email.toLowerCase();
         var raw_pwd = loginCredential.password;
         var userCredential;
         var type;

@@ -38,7 +38,7 @@ module.exports = {
             }).then(() => {
                 callback(null, game_id);
             }).catch((err) => {
-                if(game_id) err['Inserted_game_id']=game_id;
+                if(game_id) err.Inserted_game_id=game_id;
                 console.error(err);
                 callback(err, null);
             });
@@ -46,23 +46,40 @@ module.exports = {
     //Qns 7: Get all games based on platforms
     readGamesByPlatform : (platform, callback) => {
         var games;
+        var categories;
+        var gameIdArr = [];
         conn.connect()
             .then(() => {
                 var readGamesByPlatformSQL = `
                 SELECT 
-                g.game_id,  g.title, g.description, g.price, g.platform, g.year, c.catname
+                game_id, title, description, price, platform, year
                 FROM 
-                games g, categories c, game_category_map gm 
-                WHERE c.cat_id = gm.fk_cat_id AND g.game_id = gm.fk_game_id 
-                HAVING g.platform = ?
+                games
+                WHERE platform = ?
                 `;
                 return conn.query(readGamesByPlatformSQL , [platform]);
             }).then((data) => {
                 games = data;
+                games.forEach((game)=>{gameIdArr.push(game.game_id);});
+                var readCategoryListFromGameID = `
+                SELECT c.catname
+                FROM categories c, game_category_map cg
+                WHERE c.cat_id = cg.fk_cat_id
+                AND cg.fk_game_id = ?;
+                `;
+                return Promise.all(gameIdArr.map(gameId => {
+                    return conn.query(readCategoryListFromGameID, [gameId]);
+                }));
+            }).then(data=>{
+                categories = data;
+                // console.log(categories);
                 return conn.close();
             }, (err) => {
                 return conn.close().then(() => { throw err; });
             }).then(() => {
+                for (var i =0; i<games.length; i++){
+                    games[i].categories = categories[i].map(category=>category.catname);
+                }
                 callback(null, games);
             }).catch((err)=>{
                 console.error(err);
@@ -114,7 +131,7 @@ module.exports = {
                 DELETE FROM
                 game_category_map
                 WHERE fk_game_id = ?;
-                `
+                `;
                 return conn.query(deleteCategoryMapping, [gameId]);
             })
             .then((data) => {

@@ -20,18 +20,19 @@ module.exports = {
                 } else {
                     // console.log(decoded);
                     req.user_id = decoded.id; //decode the userid and store in req for use
-                    req.role = decoded.role; //decode the role and store in req for use
+                    req.type = decoded.type; //decode the type and store in req for use
                     next();
                 }
-
             });
         }
     },
-    generateToken: async (user_id, role, expires = 86400) => {
-        if(user_id == undefined || role == undefined) throw new Error("User_id or Role is undefined");
+    generateToken: async (user_id, type, expires = 86400) => {
+        // console.log(user_id)
+        // console.log(type)
+        if(user_id == undefined || type == undefined) throw new Error("User_id or Type is undefined");
         var payload = {
             id: user_id,
-            role: role
+            type: type
         }; 
         return jwt.sign(payload, config.key, { expiresIn: expires });
     }

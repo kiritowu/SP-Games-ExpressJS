@@ -21,7 +21,9 @@ var storage = multer.diskStorage({ //Image path config
 	},
 	filename: function (req, file, callback) {
 		const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9) + ".jpg";
-		callback(null, file.fieldname + '-' + uniqueSuffix);
+		const fileName = file.fieldname + '-' + uniqueSuffix;
+		req.fileName = fileName;
+		callback(null, fileName);
 	}
 });
 var upload = multer({
@@ -56,15 +58,13 @@ const { validate } = new Validator();
 // app.use(express.json()); //parse req.body to json data
 
 //Middleware for data parsing and stored into req.body
-app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
-//admin
-// Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Niwicm9sZSI6IkFkbWluIiwiaWF0IjoxNjA4MTMxNDY4LCJleHAiOjE2MDgyMTc4Njh9.6Xh4jyPSK0jFX6vvEk-IPkSWVNNdGBXaLARPPKxrTiQ
+app.use(express.urlencoded({ extended: true }));
 
 //Users Table
-//question 1: Get all user
+//Question 1: Get all user
 app.get("/users/", tokenAuth.verifyToken, (req, res) => {
-	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
+	if (req.type !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
 			"Result": "Unauthorized",
 			"Message": "This is an admin classified action. Please login with an Admin account."
@@ -80,7 +80,7 @@ app.get("/users/", tokenAuth.verifyToken, (req, res) => {
 			return;
 		}
 
-		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+		tokenAuth.generateToken(req.user_id, req.type) //Refresh the token for another 24 Hour
 			.then(token => {
 				res.header({
 					Authorization: `Bearer ${token}` //Include Bearer JWT as header
@@ -96,10 +96,11 @@ app.get("/users/", tokenAuth.verifyToken, (req, res) => {
 	});
 });
 
-//question 2: Insert new user
+//Question 2: Insert new user + Advance Feature 1: Upload of Profile Picture
 var userSchema = {
+	consumes: ['multipart/form-data'],
 	type: "object",
-	required: ["username", "email", "type", "password", "profile_pic_url"],
+	required: ["username", "email", "type", "password"],
 	properties: {
 		username: {
 			type: "string",
@@ -121,22 +122,18 @@ var userSchema = {
 			type: "string",
 			maxLength: 8,
 			minLength: 5
-		},
-		profile_pic_url: {
-			type: "string",
-			maxLength: 45
 		}
 	},
 };
-app.post("/users/", tokenAuth.verifyToken, validate({ body: userSchema }), (req, res) => {
-	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
-		res.status(403).send({
-			"Result": "Unauthorized",
-			"Message": "This is an admin classified action. Please login with an Admin account."
-		});
-		return;
+var userField = [{name: "username", maxCount: 1}, {name: "email", maxCount: 1}, {name: "type", maxCount:1}, {name: "password", maxCount:1}, {name:"profile-pic", maxCount:1}]; //For uplaod multipart/form data
+
+app.post("/users/", upload.fields(userField), validate({ body: userSchema }), (req, res) => {	
+	if(req.fileName){
+		req.body.profile_pic_url = `http://localhost:8081/users/pic/${req.fileName}`;
+	}else{
+		req.body.profile_pic_url = `http://localhost:8081/users/pic/default.jpg`;
 	}
-	users.createUser(req.body, (err, insertId) => {
+	users.createUser(req.body, (err, user) => {
 		if (err) {
 			if(err.errno === 1062){
 				res.status(422).send({
@@ -151,11 +148,11 @@ app.post("/users/", tokenAuth.verifyToken, validate({ body: userSchema }), (req,
 			});
 			return;
 		}
-		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+		tokenAuth.generateToken(user.insertId, user.type) //Refresh the token for another 24 Hour
 			.then(token => {
 				res.header({
 					Authorization: `Bearer ${token}` //Include Bearer JWT as header
-				}).set('Cache-control', 'private, max-age=86400').status(201).send({ "User_id": insertId }); //Cache the header for 86400s (24 Hour).send(users);
+				}).set('Cache-control', 'private, max-age=86400').status(201).send({ "User_id": user.insertId }); //Cache the header for 86400s (24 Hour).send(users);
 			}).catch(err => {
 				console.error(err);
 				return res.status(500).send({
@@ -166,7 +163,7 @@ app.post("/users/", tokenAuth.verifyToken, validate({ body: userSchema }), (req,
 	});
 });
 
-//question 3: Get user with specific id
+//Question 3: Get user with specific id
 app.get("/users/:id", tokenAuth.verifyToken, (req, res) => {
 	const id = parseInt(req.params.id);
 	if (isNaN(id)) {
@@ -192,7 +189,7 @@ app.get("/users/:id", tokenAuth.verifyToken, (req, res) => {
 			});
 			return;
 		}
-		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+		tokenAuth.generateToken(req.user_id, req.type) //Refresh the token for another 24 Hour
 			.then(token => {
 				res.header({
 					Authorization: `Bearer ${token}` //Include Bearer JWT as header
@@ -206,6 +203,28 @@ app.get("/users/:id", tokenAuth.verifyToken, (req, res) => {
 				});
 			});
 
+	});
+});
+
+//Advance Feature 1: Retrieval of User's Profile Picture based on FileName
+app.get("/users/pic/:picName", (req,res)=>{
+	var picName = req.params.picName;
+	var path = `${__dirname}/../tmp/images/` + picName;
+	fs.readFile(path, (err, data) => {
+		if (err) {
+			console.error(err);
+			if (err.errno === -4058) {
+				return res.status(404).send({
+					"Result": "Not Found",
+					"Message": "The image or path cannot be found. Please try other Image."
+				});
+			}
+			return res.status(500).send({
+				"Result": "Internal Error",
+				"Message": "An Unknown Error have occured. Please Contact our Admin for further assistance."
+			});
+		}
+		res.contentType('image/jpeg').send(data);
 	});
 });
 
@@ -251,8 +270,9 @@ app.post("/users/login", validate({ body: userLoginSchema }), (req, res) => {
 	});
 });
 
+
 //Category Table
-//question 4: Insert new category
+//Question 4: Insert new category
 var categorySchema = {
 	type: "object",
 	required: ["catname", "description"],
@@ -270,7 +290,7 @@ var categorySchema = {
 	}
 };
 app.post("/category/", tokenAuth.verifyToken, validate({ body: categorySchema }), (req, res) => {
-	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
+	if (req.type !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
 			"Result": "Unauthorized",
 			"Message": "This is an admin classified action. Please login with an Admin account."
@@ -292,7 +312,7 @@ app.post("/category/", tokenAuth.verifyToken, validate({ body: categorySchema })
 			});
 			return;
 		}
-		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+		tokenAuth.generateToken(req.user_id, req.type) //Refresh the token for another 24 Hour
 			.then(token => {
 				res.header({
 					Authorization: `Bearer ${token}` //Include Bearer JWT as header
@@ -308,9 +328,9 @@ app.post("/category/", tokenAuth.verifyToken, validate({ body: categorySchema })
 	});
 });
 
-//question 5: Update category
+//Question 5: Update category
 app.put("/category/:cat_id", tokenAuth.verifyToken, validate({ body: categorySchema }), (req, res) => {
-	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
+	if (req.type !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
 			"Result": "Unauthorized",
 			"Message": "This is an admin classified action. Please login with an Admin account."
@@ -348,7 +368,7 @@ app.put("/category/:cat_id", tokenAuth.verifyToken, validate({ body: categorySch
 			});
 			return;
 		}
-		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+		tokenAuth.generateToken(req.user_id, req.type) //Refresh the token for another 24 Hour
 			.then(token => {
 				res.header({
 					Authorization: `Bearer ${token}` //Include Bearer JWT as header
@@ -365,7 +385,7 @@ app.put("/category/:cat_id", tokenAuth.verifyToken, validate({ body: categorySch
 });
 
 //Game Table
-//question 6: Used to add a new game to the database.
+//Question 6: Used to add a new game to the database.
 var gameSchema = {
 	type: "object",
 	required: ["title", "description", "price", "platform", "year", "categories"],
@@ -400,7 +420,7 @@ var gameSchema = {
 	}
 };
 app.post("/game/", tokenAuth.verifyToken, validate({ body: gameSchema }), (req, res) => {
-	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
+	if (req.type !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
 			"Result": "Unauthorized",
 			"Message": "This is an admin classified action. Please login with an Admin account."
@@ -429,7 +449,7 @@ app.post("/game/", tokenAuth.verifyToken, validate({ body: gameSchema }), (req, 
 			});
 			return;
 		}
-		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+		tokenAuth.generateToken(req.user_id, req.type) //Refresh the token for another 24 Hour
 			.then(token => {
 				res.header({
 					Authorization: `Bearer ${token}` //Include Bearer JWT as header
@@ -447,7 +467,7 @@ app.post("/game/", tokenAuth.verifyToken, validate({ body: gameSchema }), (req, 
 	});
 });
 
-//question 7: get games based on platform
+//Question 7: get games based on platform
 app.get("/games/:platform", (req, res) => {
 	var platform = req.params.platform;
 	games.readGamesByPlatform(platform, (err, games) => {
@@ -469,9 +489,9 @@ app.get("/games/:platform", (req, res) => {
 	});
 });
 
-// question 8 delete game based on game id
+// Question 8 delete game based on game id
 app.delete("/game/:id", tokenAuth.verifyToken, (req, res) => {
-	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
+	if (req.type !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
 			"Result": "Unauthorized",
 			"Message": "This is an admin classified action. Please login with an Admin account."
@@ -502,7 +522,7 @@ app.delete("/game/:id", tokenAuth.verifyToken, (req, res) => {
 			});
 			return;
 		}
-		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+		tokenAuth.generateToken(req.user_id, req.type) //Refresh the token for another 24 Hour
 			.then(token => {
 				res.header({
 					Authorization: `Bearer ${token}` //Include Bearer JWT as header
@@ -518,9 +538,9 @@ app.delete("/game/:id", tokenAuth.verifyToken, (req, res) => {
 	});
 });
 
-//question 9: update game
+//Question 9: update game
 app.put("/game/:id", tokenAuth.verifyToken, validate({ body: gameSchema }), (req, res) => {
-	if (req.role !== "Admin") { //Only Admin can access the content or perform the query
+	if (req.type !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
 			"Result": "Unauthorized",
 			"Message": "This is an admin classified action. Please login with an Admin account."
@@ -555,7 +575,7 @@ app.put("/game/:id", tokenAuth.verifyToken, validate({ body: gameSchema }), (req
 			});
 			return;
 		}
-		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+		tokenAuth.generateToken(req.user_id, req.type) //Refresh the token for another 24 Hour
 			.then(token => {
 				res.header({
 					Authorization: `Bearer ${token}` //Include Bearer JWT as header
@@ -572,7 +592,7 @@ app.put("/game/:id", tokenAuth.verifyToken, validate({ body: gameSchema }), (req
 });
 
 //Review Table
-//question 10 add a new review to the database for given user and game
+//Question 10 add a new review to the database for given user and game
 var reviewSchema = {
 	type: "object",
 	required: ["content", "rating"],
@@ -621,7 +641,7 @@ app.post("/user/:uid/game/:gid/review/", tokenAuth.verifyToken, validate({ body:
 			});
 			return;
 		}
-		tokenAuth.generateToken(req.user_id, req.role) //Refresh the token for another 24 Hour
+		tokenAuth.generateToken(req.user_id, req.type) //Refresh the token for another 24 Hour
 			.then(token => {
 				res.header({
 					Authorization: `Bearer ${token}` //Include Bearer JWT as header
@@ -637,7 +657,7 @@ app.post("/user/:uid/game/:gid/review/", tokenAuth.verifyToken, validate({ body:
 	});
 });
 
-//question 11 get review based on game id
+//Question 11 get review based on game id
 app.get("/game/:id/review", (req, res) => {
 	var gameId = req.params.id;
 	if (isNaN(gameId)) {
@@ -663,32 +683,6 @@ app.get("/game/:id/review", (req, res) => {
 			return;
 		}
 		res.status(200).send(data);
-	});
-});
-
-
-//Advance Feature 1: Upload & Retrival of Images
-app.post("/upload", upload.single('pic'), (req, res) => {
-	res.send();
-});
-app.get("/pic", (req, res) => {
-	var filename = req.body.name;
-	var path = `${__dirname}/../tmp/images/` + filename;
-	fs.readFile(path, (err, data) => {
-		if (err) {
-			console.error(err);
-			if (err.errno === -4058) {
-				return res.status(404).send({
-					"Result": "Not Found",
-					"Message": "The image or path cannot be found. Please try other Image."
-				});
-			}
-			return res.status(500).send({
-				"Result": "Internal Error",
-				"Message": "An Unknown Error have occured. Please Contact our Admin for further assistance."
-			});
-		}
-		res.contentType('image/jpeg').send(data);
 	});
 });
 
