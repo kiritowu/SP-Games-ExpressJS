@@ -36,13 +36,13 @@ module.exports = {
             .then(() => {
                 var getReviewsSQL = `
                 SELECT 
-                r.content, r.rating, u.username, g.game_id 
+                g.game_id, r.content, r.rating, u.username, r.created_at 
                 FROM 
                 reviews r, users u, games g  
                 WHERE
-                r.fk_game_id = ? AND g.game_id = ? AND u.user_id = r.fk_user_id;
+                r.fk_game_id = g.game_id AND u.user_id = r.fk_user_id AND g.game_id = ?;
                 `;
-                return conn.query(getReviewsSQL, [gameID, gameID]);
+                return conn.query(getReviewsSQL, [gameID]);
             }).then((data) => {
                 reviews = data;
                 return conn.close();

@@ -126,12 +126,14 @@ var userSchema = {
 	},
 };
 var userField = [{name: "username", maxCount: 1}, {name: "email", maxCount: 1}, {name: "type", maxCount:1}, {name: "password", maxCount:1}, {name:"profile-pic", maxCount:1}]; //For uplaod multipart/form data
+// when do postman request use form data to send all datas including text and file(profile picture)
+
 
 app.post("/users/", upload.fields(userField), validate({ body: userSchema }), (req, res) => {	
 	if(req.fileName){
-		req.body.profile_pic_url = `http://localhost:8081/users/pic/${req.fileName}`;
+		req.body.profile_pic_url = `/users/pic/${req.fileName}`;
 	}else{
-		req.body.profile_pic_url = `http://localhost:8081/users/pic/default.jpg`;
+		req.body.profile_pic_url = `/users/pic/default.jpg`;
 	}
 	users.createUser(req.body, (err, user) => {
 		if (err) {
@@ -213,7 +215,7 @@ app.get("/users/pic/:picName", (req,res)=>{
 	fs.readFile(path, (err, data) => {
 		if (err) {
 			console.error(err);
-			if (err.errno === -4058) {
+			if (err.errno === -2) {
 				return res.status(404).send({
 					"Result": "Not Found",
 					"Message": "The image or path cannot be found. Please try other Image."

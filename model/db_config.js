@@ -13,7 +13,7 @@
 
 
 const dbUser = 'root';
-const dbPassword = 'kiritowu0818';
+const dbPassword = 'root';
 const schem = "sp_games";
 
 const mysql = require('mysql');
@@ -25,7 +25,9 @@ const dbconnect = {
             password: dbPassword ,
             database: schema,// TO cater case of connecting to multiple schema
 						// retain DATE as a string
-            dateStrings: true
+            port:3306,
+            dateStrings: true,
+          
         });
     }
 };

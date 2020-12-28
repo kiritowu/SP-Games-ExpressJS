@@ -11,7 +11,7 @@ module.exports = {
             .then(() => {
                 var getAllUsersSQL = `
                     SELECT 
-                    u.user_id, u.username, u.email, u.type, u.profile_pic_url
+                    u.user_id, u.username, u.email, u.type, u.profile_pic_url, u.created_at
                     FROM users u;
                 `;
                 return conn.query(getAllUsersSQL, []);
@@ -33,7 +33,7 @@ module.exports = {
         var username = user.username;
         var email = user.email.toLowerCase(); //convert email into lower cases since email is not case-sensitive
         var type = user.type[0].toUpperCase() + user.type.slice(1).toLowerCase(); //Capitalize the type 
-        var profile_pic_url = user.profile_pic_url.toLowerCase(); 
+        var profile_pic_url = user.profile_pic_url; 
         var raw_pwd = user.password;
         conn.connect()
             .then(() => {
@@ -66,7 +66,7 @@ module.exports = {
             .then(() => {
                 var getUserWithIDSQL = `
                 SELECT
-                u.user_id, u.username, u.email, u.type, u.profile_pic_url
+                u.user_id, u.username, u.email, u.profile_pic_url, u.type AS 'role' , u.created_at
                 FROM users u
                 WHERE user_id = ?;
                 `;
