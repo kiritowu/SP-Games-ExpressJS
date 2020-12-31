@@ -48,21 +48,23 @@ var reviews = require('../model/reviews_p');
 
 //JWT authentication
 var tokenAuth = require('../auth/tokenAuth');
+/*
+The following notation indicates the Accessibility of each Endpoint
+
+(**) -- Can only be Accessed by Providing Admin JWT
+(*)  -- Can only be Accessed by Providing Admin or Customer JWT
+()   -- Can be Accessed by Public 
+*/
 
 var app = express();
 const { validate } = new Validator();
-
-// const bodyParser = require('body-parser');
-// const urlencodedParser = bodyParser.urlencoded({extended:false});
-// app.use(urlencodedParser); //attach body-parser middelware to decode x-www-form-urlencoded to req.body 
-// app.use(express.json()); //parse req.body to json data
 
 //Middleware for data parsing and stored into req.body
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 //Users Table
-//Question 1: Get all user
+//(**) Question 1: Get all user
 app.get("/users/", tokenAuth.verifyToken, (req, res) => {
 	if (req.type !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
@@ -96,7 +98,7 @@ app.get("/users/", tokenAuth.verifyToken, (req, res) => {
 	});
 });
 
-//Question 2: Insert new user + Advance Feature 1: Upload of Profile Picture
+//() Question 2: Insert new user + Advance Feature 1.1: Upload of Profile Picture
 var userSchema = {
 	consumes: ['multipart/form-data'],
 	type: "object",
@@ -165,7 +167,7 @@ app.post("/users/", upload.fields(userField), validate({ body: userSchema }), (r
 	});
 });
 
-//Question 3: Get user with specific id
+//(*) Question 3: Get user with specific id
 app.get("/users/:id", tokenAuth.verifyToken, (req, res) => {
 	const id = parseInt(req.params.id);
 	if (isNaN(id)) {
@@ -208,7 +210,7 @@ app.get("/users/:id", tokenAuth.verifyToken, (req, res) => {
 	});
 });
 
-//Advance Feature 1: Retrieval of User's Profile Picture based on FileName
+//() Advance Feature 1.2: Retrieval of User's Profile Picture based on FileName
 app.get("/users/pic/:picName", (req,res)=>{
 	var picName = req.params.picName;
 	var path = `${__dirname}/../tmp/images/` + picName;
@@ -230,7 +232,7 @@ app.get("/users/pic/:picName", (req,res)=>{
 	});
 });
 
-//Advance Feature 3: User login
+//() Advance Feature 3: User Login
 var userLoginSchema = {
 	type: "object",
 	required: ["email", "password"],
@@ -274,7 +276,7 @@ app.post("/users/login", validate({ body: userLoginSchema }), (req, res) => {
 
 
 //Category Table
-//Question 4: Insert new category
+//(**) Question 4: Insert new category
 var categorySchema = {
 	type: "object",
 	required: ["catname", "description"],
@@ -330,7 +332,7 @@ app.post("/category/", tokenAuth.verifyToken, validate({ body: categorySchema })
 	});
 });
 
-//Question 5: Update category
+//(**) Question 5: Update category
 app.put("/category/:cat_id", tokenAuth.verifyToken, validate({ body: categorySchema }), (req, res) => {
 	if (req.type !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
@@ -387,7 +389,7 @@ app.put("/category/:cat_id", tokenAuth.verifyToken, validate({ body: categorySch
 });
 
 //Game Table
-//Question 6: Used to add a new game to the database.
+//(**) Question 6: Used to add a new game to the database.
 var gameSchema = {
 	type: "object",
 	required: ["title", "description", "price", "platform", "year", "categories"],
@@ -469,7 +471,7 @@ app.post("/game/", tokenAuth.verifyToken, validate({ body: gameSchema }), (req, 
 	});
 });
 
-//Question 7: get games based on platform
+//() Question 7: get games based on platform
 app.get("/games/:platform", (req, res) => {
 	var platform = req.params.platform;
 	games.readGamesByPlatform(platform, (err, games) => {
@@ -491,7 +493,7 @@ app.get("/games/:platform", (req, res) => {
 	});
 });
 
-// Question 8 delete game based on game id
+//(**) Question 8 delete game based on game id
 app.delete("/game/:id", tokenAuth.verifyToken, (req, res) => {
 	if (req.type !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
@@ -540,7 +542,7 @@ app.delete("/game/:id", tokenAuth.verifyToken, (req, res) => {
 	});
 });
 
-//Question 9: update game
+//(**) Question 9: update game
 app.put("/game/:id", tokenAuth.verifyToken, validate({ body: gameSchema }), (req, res) => {
 	if (req.type !== "Admin") { //Only Admin can access the content or perform the query
 		res.status(403).send({
@@ -594,7 +596,7 @@ app.put("/game/:id", tokenAuth.verifyToken, validate({ body: gameSchema }), (req
 });
 
 //Review Table
-//Question 10 add a new review to the database for given user and game
+//(*) Question 10: add a new review to the database for given user and game
 var reviewSchema = {
 	type: "object",
 	required: ["content", "rating"],
@@ -659,7 +661,7 @@ app.post("/user/:uid/game/:gid/review/", tokenAuth.verifyToken, validate({ body:
 	});
 });
 
-//Question 11 get review based on game id
+//() Question 11 get review based on game id
 app.get("/game/:id/review", (req, res) => {
 	var gameId = req.params.id;
 	if (isNaN(gameId)) {
