@@ -1,3 +1,16 @@
+//+---------------+---------------+
+//| Name          | Wong Zhao Wu  |
+//| Class         | DAAA/FT/1B/01 |
+//| Admission No. | 2036504       |
+//+---------------+---------------+
+//.---------------.---------------.
+//| Name          | Li Yifan      |
+//:---------------+---------------:
+//| Class         | DAAA/FT/1B/01 |
+//:---------------+---------------:
+//| Admission No. | 2011860       |
+//'---------------'---------------'
+
 const bcrypt = require('bcrypt');
 
 module.exports = {
@@ -26,12 +39,16 @@ module.exports = {
     },
     validateUserAuth: async (usr_pwd, oriHash, oriSalt) => {
         // Re-hash based on the current password inputted and original Salt key 
-        var curHash = await bcrypt.hash(usr_pwd, oriSalt);
-        if (curHash === oriHash) {
-            //Return True if both Hashed key is correct
-            return true;
+        try{
+            var curHash = await bcrypt.hash(usr_pwd, oriSalt);
+            if (curHash === oriHash) {
+                //Return True if both Hashed key is correct
+                return true;
+            }
+            return false;
+        }catch{
+            return false;
         }
-        return false;
     }
 };
 
