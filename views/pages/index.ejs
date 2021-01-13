@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../partials/head', {title: title}); %>
+</head>
+
+<body class="home-template">
+    <div class="site-wrapper">
+        <%- include('../partials/header'); %>
+            <header class="main-header " style="background-image: url(assets/img/intro.jpg)">
+                <div class="vertical">
+                    <div class="main-header-content inner">
+                        <h1 class="page-title">SP Games</h1>
+                        <div class="entry-title-divider">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <h2 class="page-description">Shops, reviews and games since 2077.</h2>
+                    </div>
+                </div>
+                <a class="scroll-down icon-arrow-left" href="#content" data-offset="-45"><span class="hidden">Scroll
+                        Down</span></a>
+            </header>
+
+            <main>
+
+                <div class="row">
+                    <div class="col-sm-8">
+                        <div class="jumbotron">
+                            <h1>This is great</h1>
+                            <p>Welcome to templating using EJS</p>
+                        </div>
+                    </div>
+
+                    <div class="col-sm-4">
+                        <div class="well">
+                            <h3>Look I'm A Sidebar!</h3>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+
+            <footer class="site-footer clearfix">
+                <%- include('../partials/footer'); %>
+            </footer>
+    </div>
+</body>
+
+</html>

@@ -1,3 +1,15 @@
+//+---------------+---------------+
+//| Name          | Wong Zhao Wu  |
+//| Class         | DAAA/FT/1B/01 |
+//| Admission No. | 2036504       |
+//+---------------+---------------+
+//.---------------.---------------.
+//| Name          | Li Yifan      |
+//:---------------+---------------:
+//| Class         | DAAA/FT/1B/01 |
+//:---------------+---------------:
+//| Admission No. | 2011860       |
+//'---------------'---------------'
 Database = require("./db_promise");
 conn = new Database();
 
@@ -6,7 +18,7 @@ module.exports = {
     createReview: (gameID, userId, review, callback) => {
         var result;
         var content = review.content;
-        var rating = review.rating;
+        var rating = parseInt(review.rating);
         conn.connect()
             .then(() => {
                 var createReviewSQL = `

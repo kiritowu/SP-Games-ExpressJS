@@ -1,3 +1,15 @@
+//+---------------+---------------+
+//| Name          | Wong Zhao Wu  |
+//| Class         | DAAA/FT/1B/01 |
+//| Admission No. | 2036504       |
+//+---------------+---------------+
+//.---------------.---------------.
+//| Name          | Li Yifan      |
+//:---------------+---------------:
+//| Class         | DAAA/FT/1B/01 |
+//:---------------+---------------:
+//| Admission No. | 2011860       |
+//'---------------'---------------'
 Database = require("./db_promise");
 conn = new Database();
 
@@ -8,18 +20,19 @@ module.exports = {
         var description = game.description;
         var price = game.price;
         var platform = game.platform;
-        var year = game.year;
+        var year = parseInt(game.year);
         var categories = game.categories;
+        var game_pic_url = `/game/pic/default.jpg`;
         var game_id;
         conn.connect()
             .then(() => {
                 var createGameSQL = `
                     INSERT INTO 
                     sp_games.games 
-                    (title,description,price,platform,year) 
-                    VALUES (?,?,?,?,?);
+                    (title,description,price,platform,year,game_pic_url) 
+                    VALUES (?,?,?,?,?,?);
                 `;
-                return conn.query(createGameSQL, [title, description, price, platform, year]);
+                return conn.query(createGameSQL, [title, description, price, platform, year, game_pic_url]);
             }).then((data) => {
                 game_id = data.insertId;
                 var createCategoryMappingSQL = `
@@ -43,6 +56,30 @@ module.exports = {
                 callback(err, null);
             });
     },
+    uploadGamePic: (game_pic_url, game, callback) => {
+        var title = game.title;
+        var result;
+        conn.connect()
+        .then(() => {
+            var createGameSQL = `
+                UPDATE 
+                games
+                SET game_pic_url = ?
+                WHERE title = ?;
+            `;
+            return conn.query(createGameSQL, [game_pic_url, title]);
+        }).then((data) => {
+            result = data;
+            return conn.close();
+        }, (err) => {
+            return conn.close().then(() => { throw err; });
+        }).then(() => {
+            callback(null, result.affectedRows);
+        }).catch((err) => {
+            console.error(err);
+            callback(err, null);
+        });
+    },
     //Qns 7: Get all games based on platforms
     readGamesByPlatform : (platform, callback) => {
         var games;
@@ -52,7 +89,7 @@ module.exports = {
             .then(() => {
                 var readGamesByPlatformSQL = `
                 SELECT 
-                game_id, title, description, price, platform, year
+                game_id, title, description, price, platform, year, game_pic_url
                 FROM 
                 games
                 WHERE platform = ?
@@ -113,7 +150,7 @@ module.exports = {
         var description = game.description;
         var price = game.price;
         var platform = game.platform;
-        var year = game.year;
+        var year = parseInt(game.year);
         var title = game.title;
         var categories = game.categories;
         conn.connect()
