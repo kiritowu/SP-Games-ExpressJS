@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../partials/head', {title: title, type: type, path: path}); %>
+</head>
+
+<body class="home-template">
+    <div class="site-wrapper">
+        <%- include('../partials/header'); %>
+            <header class="main-header author-head">
+                <div class="vertical">
+                    <div class="main-header-content inner">
+                        <h1 class="post-title" style="font-size: 4.5rem;">Login</h1>
+                    </div>
+                </div>
+            </header>
+            <main class="col-12 text-center pb-5 mb-5">
+                <form class="col-6 offset-3 form-group" method="post" action="/api/users/login" autocomplete="off">
+                    <label for="email" class="form-label">Email</label><br>
+                    <input type="email" id="email" name="email" class="form-control form-control-lg" required><br>
+                    <label for="password" class="form-label">Password</label><br>
+                    <input type="password" id="password" name="password" class="form-control form-control-lg" required
+                        minlength="6"><br>
+                    <button type="submit" class="d-block mx-auto col-5 btn btn-primary btn-dark"
+                        style="font-size: large;">Login</button>
+                </form>
+            </main>
+            <footer class="site-footer clearfix">
+                <%- include('../partials/footer'); %>
+            </footer>
+    </div>
+</body>
+
+</html>

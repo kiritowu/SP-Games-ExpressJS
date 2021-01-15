@@ -1,17 +1,24 @@
-<nav class="main-nav overlay clearfix">
+<nav class="main-nav overlay clearfix" style="height:64px;">
   <a class="navbar-brand blog-logo" href="index.html">
     <img src="assets/images/sp-games-simplify-w.png"
       alt="SP Games" style="height:40px; "/></a>
   <ul id="menu">
-    <li class="nav-home nav-current" role="presentation"><a href="index.html">Home</a></li>
+    <li class="nav-home 
+    <%= path=='/'?'nav-current':'' %>
+    " role="presentation"><a href="/">Home</a></li>
     <li class="nav-article-example" role="presentation"><a href="article.html">Post Example</a></li>
     <li class="nav-about-us" role="presentation"><a href="about.html">Page Example</a></li>
-    <li class="nav-author-page" role="presentation"><a href="author.html">Author Page</a></li>
-    <span class="socialheader">
-      <a href="#"><span class='symbol'>circletwitterbird</span></a>
-      <a href="#"><span class='symbol'>circlefacebook</span></a>
-      <a href="#"><span class='symbol'>circlegoogleplus</span></a>
-      <a href="mailto:wowthemesnet@gmail.com"><span class='symbol'>circleemail</span></a>
+    <%if(type=='Public'){%>
+      <li class="
+      <%= path=='/login'?'nav-current':'' %>
+      " role="presentation"><a href="/login">Login</a></li>
+    <%}%> 
+    <%if(type=='Admin'){%>
+      <li class="" role="presentation"><a href="/admin">Admin Board</a></li>
+    <%}%> 
+
+    <span class="socialheader mt-2">
+      <a class="text-light" href="/logout"><%= type !== 'Public' ? 'Log Out':''%></a>
     </span>
   </ul>
 </nav>

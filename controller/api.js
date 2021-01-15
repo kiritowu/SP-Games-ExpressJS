@@ -42,7 +42,8 @@ var upload = multer({
 		files: 1 //Maximum one files to be uploaded
 	}
 });
-//JWT authentication
+//JWT authentication with cookies
+var cookieParser = require('cookie-parser')
 var tokenAuth = require('../auth/tokenAuth');
 //Backend Models
 var users = require('../model/users_p');
@@ -265,10 +266,8 @@ router.post("/users/login", validate({ body: userLoginSchema }), (req, res) => {
 			});
 		} else {
 			return res.status(200)
-				.header({
-					Authorization: `Bearer ${user.token}`
-				}).set('Cache-control', 'private, max-age=86400') //Cache the header for 86400s (24 Hour)
-				.send(`Welcome ${user.username}!`);
+				.cookie('authcookie',user.token,{maxAge:3.6e+6,  path: '/'})  //Cache the header for 86400s (24 Hour)
+				.redirect(`/`);
 		}
 	});
 });
