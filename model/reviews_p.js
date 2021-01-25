@@ -48,11 +48,12 @@ module.exports = {
             .then(() => {
                 var getReviewsSQL = `
                 SELECT 
-                g.game_id, r.content, r.rating, u.username, r.created_at 
+                g.game_id, r.content, r.rating, u.username, r.created_at , u.profile_pic_url
                 FROM 
                 reviews r, users u, games g  
                 WHERE
-                r.fk_game_id = g.game_id AND u.user_id = r.fk_user_id AND g.game_id = ?;
+                r.fk_game_id = g.game_id AND u.user_id = r.fk_user_id AND g.game_id = ?
+                ORDER BY r.created_at DESC;
                 `;
                 return conn.query(getReviewsSQL, [gameID]);
             }).then((data) => {

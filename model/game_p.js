@@ -22,7 +22,7 @@ module.exports = {
         var platform = game.platform;
         var year = parseInt(game.year);
         var categories = game.categories;
-        var game_pic_url = `/game/pic/default.jpg`;
+        var game_pic_url = game.game_pic_url;
         var game_id;
         conn.connect()
             .then(() => {
@@ -51,37 +51,13 @@ module.exports = {
             }).then(() => {
                 callback(null, game_id);
             }).catch((err) => {
-                if(game_id) err.Inserted_game_id=game_id;
+                if (game_id) err.Inserted_game_id = game_id;
                 console.error(err);
                 callback(err, null);
             });
     },
-    uploadGamePic: (game_pic_url, game, callback) => {
-        var title = game.title;
-        var result;
-        conn.connect()
-        .then(() => {
-            var createGameSQL = `
-                UPDATE 
-                games
-                SET game_pic_url = ?
-                WHERE title = ?;
-            `;
-            return conn.query(createGameSQL, [game_pic_url, title]);
-        }).then((data) => {
-            result = data;
-            return conn.close();
-        }, (err) => {
-            return conn.close().then(() => { throw err; });
-        }).then(() => {
-            callback(null, result.affectedRows);
-        }).catch((err) => {
-            console.error(err);
-            callback(err, null);
-        });
-    },
     //Qns 7: Get all games based on platforms
-    readGamesByPlatform : (platform, callback) => {
+    readGamesByPlatform: (platform, callback) => {
         var games;
         var categories;
         var gameIdArr = [];
@@ -94,10 +70,10 @@ module.exports = {
                 games
                 WHERE platform = ?
                 `;
-                return conn.query(readGamesByPlatformSQL , [platform]);
+                return conn.query(readGamesByPlatformSQL, [platform]);
             }).then((data) => {
                 games = data;
-                games.forEach((game)=>{gameIdArr.push(game.game_id);});
+                games.forEach((game) => { gameIdArr.push(game.game_id); });
                 var readCategoryListFromGameID = `
                 SELECT c.catname
                 FROM categories c, game_category_map cg
@@ -107,31 +83,30 @@ module.exports = {
                 return Promise.all(gameIdArr.map(gameId => {
                     return conn.query(readCategoryListFromGameID, [gameId]);
                 }));
-            }).then(data=>{
+            }).then(data => {
                 categories = data;
-                // console.log(categories);
                 return conn.close();
             }, (err) => {
                 return conn.close().then(() => { throw err; });
             }).then(() => {
-                for (var i =0; i<games.length; i++){
-                    games[i].categories = categories[i].map(category=>category.catname);
+                for (var i = 0; i < games.length; i++) {
+                    games[i].categories = categories[i].map(category => category.catname);
                 }
                 callback(null, games);
-            }).catch((err)=>{
+            }).catch((err) => {
                 console.error(err);
                 callback(err, null);
             });
     },
     //Qns 8: Delete game based on ID
-    deleteGame : (gameId, callback) => {
+    deleteGame: (gameId, callback) => {
         var result;
         conn.connect()
             .then(() => {
                 var deleteGameSQL = `
                     DELETE FROM games WHERE game_id = ?;
                 `;
-                return conn.query(deleteGameSQL , [gameId]);
+                return conn.query(deleteGameSQL, [gameId]);
             }).then((data) => {
                 result = data;
                 return conn.close();
@@ -139,7 +114,7 @@ module.exports = {
                 return conn.close().then(() => { throw err; });
             }).then(() => {
                 callback(null, result.affectedRows);
-            }).catch((err)=>{
+            }).catch((err) => {
                 console.error(err);
                 callback(err, null);
             });
@@ -153,18 +128,19 @@ module.exports = {
         var year = parseInt(game.year);
         var title = game.title;
         var categories = game.categories;
+        var game_pic_url = game.game_pic_url;
         conn.connect()
             .then(() => {
                 var updateGamesSQL = `
                 UPDATE
                 games
                 SET
-                description = ?, price = ?, platform = ?, year = ?, title = ? 
+                description = ?, price = ?, platform = ?, year = ?, title = ?, game_pic_url = ?
                 WHERE game_id = ?;  
                 `;
-                return conn.query(updateGamesSQL, [description, price, platform, year, title, gameId]);
-            }).then(()=>{
-                var deleteCategoryMapping =`
+                return conn.query(updateGamesSQL, [description, price, platform, year, title, game_pic_url, gameId]);
+            }).then(() => {
+                var deleteCategoryMapping = `
                 DELETE FROM
                 game_category_map
                 WHERE fk_game_id = ?;
@@ -191,6 +167,93 @@ module.exports = {
             }).catch((err) => {
                 console.error(err, null);
                 callback(err);
+            });
+    },
+    searchGames: (properties, callback) => {
+        var games;
+        var gameIdArr = [];
+        var id = properties.id ? properties.id : "%";
+        var title = properties.title ? "%" + properties.title + "%" : "%";
+        var max = properties.max ? properties.max : "9223372036854775807"; // Maximum value of BigInt
+        var min = properties.min ? properties.min : "0";
+        var year = properties.year ? properties.year : "%";
+        conn.connect()
+            .then(() => {
+                var searchGameSQL = `
+                    SELECT * 
+                    FROM games 
+                    WHERE 
+                        game_id like ? AND
+                        title like ? AND 
+                        (price BETWEEN ? AND ?) AND
+                        year like ?
+                    ` + (properties.platform ? `AND platform in (?) ` : "") + { "asc": "ORDER BY price ASC", "desc": "ORDER BY price DESC", "def": "", undefined: "" }[properties.sortBy] + ";";
+                return conn.query(searchGameSQL, [id, title, min, max, year, properties.platform]);
+            }).then((data) => {
+                games = data;
+                games.forEach((game) => { gameIdArr.push(game.game_id); });
+                var readCategoryListFromGameID = `
+                SELECT c.catname
+                FROM categories c, game_category_map cg
+                WHERE c.cat_id = cg.fk_cat_id
+                AND cg.fk_game_id = ?;
+                `;
+                return Promise.all(gameIdArr.map(gameId => {
+                    return conn.query(readCategoryListFromGameID, [gameId]);
+                }));
+            }).then(data => {
+                categories = data;
+                return conn.close();
+            }, (err) => {
+                return conn.close().then(() => { throw err; });
+            }).then(() => {
+                for (var i = 0; i < games.length; i++) {
+                    games[i].categories = categories[i].map(category => category.catname);
+                }
+                callback(null, games);
+            }).catch((err) => {
+                console.error(err);
+                callback(err, null);
+            });
+    },
+    uniquePlatform: (callback) => {
+        var platforms;
+        conn.connect()
+            .then(() => {
+                var uniquePlatformSQL = `
+                SELECT DISTINCT platform FROM games ;
+                `;
+                return conn.query(uniquePlatformSQL);
+            }).then((data) => {
+                platforms = data;
+                return conn.close();
+            }, (err) => {
+                return conn.close().then(() => { throw err; });
+            }).then(() => {
+                callback(null, platforms);
+            }).catch((err) => {
+                console.error(err);
+                callback(err, null);
+            });
+    },
+    getGameByID: (gameID, callback) => {
+        var game;
+        conn.connect()
+            .then(() => {
+                var getGameByIDSQL = `
+                SELECT * FROM games WHERE game_id = ?;
+                `;
+                return conn.query(getGameByIDSQL, [gameID]);
+            }).then((data) => {
+                game = data;
+                return conn.close();
+            }, (err) => {
+                return conn.close().then(() => { throw err; });
+            }).then(() => {
+                callback(null, game);
+            }).catch((err) => {
+                console.error(err);
+                callback(err, null);
             });
     },
 };

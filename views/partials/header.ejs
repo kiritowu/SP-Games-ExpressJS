@@ -1,24 +1,24 @@
 <nav class="main-nav overlay clearfix" style="height:64px;">
-  <a class="navbar-brand blog-logo" href="index.html">
-    <img src="assets/images/sp-games-simplify-w.png"
+  <a class="navbar-brand blog-logo" href="/">
+    <img src="/assets/images/sp-games-simplify-w.png"
       alt="SP Games" style="height:40px; "/></a>
   <ul id="menu">
     <li class="nav-home 
     <%= path=='/'?'nav-current':'' %>
     " role="presentation"><a href="/">Home</a></li>
-    <li class="nav-article-example" role="presentation"><a href="article.html">Post Example</a></li>
-    <li class="nav-about-us" role="presentation"><a href="about.html">Page Example</a></li>
+    <li class="nav-article-example" role="presentation"><a href="/search">Games</a></li>
     <%if(type=='Public'){%>
       <li class="
       <%= path=='/login'?'nav-current':'' %>
-      " role="presentation"><a href="/login">Login</a></li>
+      " role="presentation"></li>
     <%}%> 
     <%if(type=='Admin'){%>
       <li class="" role="presentation"><a href="/admin">Admin Board</a></li>
     <%}%> 
 
     <span class="socialheader mt-2">
-      <a class="text-light" href="/logout"><%= type !== 'Public' ? 'Log Out':''%></a>
+      <%login = {"Public":"Log In", "Member":"Log Out"}%> 
+      <a class="text-light" href="/<%= type == 'Public' ? login['Public'].toLowerCase().split(" ").join(''): login['Member'].toLowerCase().split(" ").join('')%>"><%= type == 'Public' ? login['Public']: login['Member'] %></a>
     </span>
   </ul>
 </nav>

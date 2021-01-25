@@ -15,8 +15,12 @@
                     </div>
                 </div>
             </header>
-            <main class="col-12 text-center pb-5 mb-5">
-                <form class="col-6 offset-3 form-group" method="post" action="/api/users/login" autocomplete="off">
+            <main class="col-12 text-center pb-5 mb-5 content">
+                <% if(unauthorized){ %>
+                    <h1>Unauthorized</h1>
+                    <p class="text-danger"><%= message %> </p>
+                <% } %>  
+                <form class="col-6 offset-3 form-group" method="post" action="/login" autocomplete="off">
                     <label for="email" class="form-label">Email</label><br>
                     <input type="email" id="email" name="email" class="form-control form-control-lg" required><br>
                     <label for="password" class="form-label">Password</label><br>

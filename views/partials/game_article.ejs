@@ -1,0 +1,29 @@
+<div class="grid-item">
+    <article class="post tag-romance">
+        <a href="/game/<%-game['game_id'] %> "><img src="api/<%-game['game_pic_url'] %>" alt="<%-game['title']%>"></a>
+        <div class="wrapgriditem">
+            <header class="post-header">
+                <h2 class="post-title"><a href="/game/<%-game['game_id'] %>"><%- game['title']%></a>
+                </h2>
+            </header>
+            <section class="post-excerpt">
+                <p>
+                   <%- game['description'] %>  <a class="read-more" href="/game/<%-game['game_id'] %>">&raquo;</a>
+                </p>
+                <h5 class="text-dark">S$&nbsp;<%- parseFloat(game['price']).toFixed(2) %> </h5>
+                <p><%-game['categories'].join(", ")%></p>
+            </section>
+            <%if (update){%>
+                <a class="btn btn-primary" href=<%-`/admin/game/${game['game_id']}/update`%>>Update Game</a>
+                <form class="d-inline" method="post" action="/api/game/<%-game['game_id']%>?_method=DELETE" onSubmit="if(!confirm('Do you really want to delete this game?')){return false;}">
+                    <button class="btn btn-danger" type="submit">Delete Game</button>
+                </form>
+            <%}%>
+            <footer class="post-meta">
+                <a href="?platform=<%-game['platform'] %>"><%- game['platform']%></a>
+                on <a href="?year=<%-game['year']%>"><%- game['year']%></a>
+                <time class="post-date" datetime="<%- game.created_at%>"><%- game.created_at%></time>
+            </footer>
+        </div>
+    </article>
+</div>

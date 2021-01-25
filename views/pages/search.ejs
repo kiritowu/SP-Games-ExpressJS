@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../partials/head', {title: title, type: type, path: path}); %>
+</head>
+
+<body class="home-template">
+    <div class="site-wrapper">
+        <%- include('../partials/header'); %>
+            <header class="main-header author-head">
+                <div class="vertical">
+                    <div class="main-header-content inner">
+                        <h1 class="post-title" style="font-size: 4.5rem;">Games</h1>
+                    </div>
+                </div>
+            </header>
+            <main class="text-center pb-5 mb-5 content" role="main">
+                <form class="col-8 mx-auto mb-5" method="get" name="search" action="/search" autocomplete="off" onsubmit="return formValidate()">
+                    <div class="form-group row">
+                        <input type="text" class="form-control form-control-lg text-center col-12" id="title"
+                            name="title" placeholder="Search Your Favourite Games" style="height:5rem;" value="<%-query.title?query.title:''%>">
+                    </div>
+                    <div class="row mb-5">
+                        <div class="form-group row col-6 mr-4">
+                            <label for="platform">Platform</label>
+                            <select multiple class="form-control" id="platform" name="platform">
+                                <% for (platform of platforms) {%>
+                                    <option <%- query.platform? (query.platform.includes(platform)?'selected':'') :''%>>
+                                        <%- platform %>
+                                    </option>
+                                    <%} %>
+                            </select>
+                        </div>
+                        <div class="form-group row col-3 mr-4">
+                            <label for="max">Price Range</label>
+                            <input type="number" maxlength="8" class="form-control" placeholder="$ MIN" value="<%-query.min?query.min:''%>"
+                                name="min">
+                            <div class="col-12"><i class="fa  fa-arrows-v"></i></div>
+                            <input type="number" maxlength="8" class="form-control" placeholder="$ MAX" value="<%-query.max?query.max:''%>"
+                                name="max">
+                                <div class="invalid-feedback" id="cat-check">
+                                    Please Enter a Valid price range.
+                                </div>
+                        </div>
+                        <div class="form-group row col-3">
+                            <label for="sortBy">Price</label>
+                            <select class="form-control" id="sortBy" name="sortBy">
+                                
+                                <option <%- query.sortBy=='def'?'selected':'' %> value="def">Price: Sort By</option>
+                                <option <%- query.sortBy=='asc'?'selected':'' %> value="asc">Price: Low to High</option>
+                                <option <%- query.sortBy=='desc'?'selected':'' %> value="desc">Price: High to Low</option>
+                            </select>
+                            <div class="invalid-feedback">Please input valid price range</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-dark btn-lg ml-3 col-4" type="submit">Search&nbsp;&nbsp;<i
+                            class="fa fa-search"></i></button>
+                </form>
+                <div class="wraps">
+                    <div class="grid">
+                        <% if (games.length===0) {%>
+                            <div class="col-12">
+                                <article class="post tag-romance">
+                                    <div class="wrapgriditem">
+                                        <header class="post-header">
+                                            <h2 class="post-title">404 Not Found
+                                            </h2>
+                                        </header>
+                                        <section class="post-excerpt">
+                                            <p>
+                                                It looks like there aren't many great matches for your search
+                                            </p>
+                                        </section>
+                                    </div>
+                                </article>
+                            </div>
+                        <%} else {games.forEach((game, index)=>{%>
+                            <%- include('../partials/game_article', {game:game})%>
+                        <%})}%>
+                    </div>
+                </div>
+            </main>
+            <footer class="site-footer clearfix">
+                <%- include('../partials/footer'); %>
+            </footer>
+    </div>
+</body>
+<script>
+    function formValidate() {
+        var form = document.forms['search'];
+        if(form['min'].value && form['max'].value){
+            var min = parseFloat(form['min'].value);
+            var max = parseFloat(form['max'].value);
+            if(isNaN(min) || isNaN(max) || max < min){
+                form['max'].classList.add("is-invalid");
+                form['min'].classList.add("is-invalid");
+                return false;
+            } else {
+                form['min'].classList.add("is-invalid");
+                form['max'].classList.remove("is-invalid");
+            }
+        }
+    }
+</script>
+</html>
