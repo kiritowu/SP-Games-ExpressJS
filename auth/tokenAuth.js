@@ -18,17 +18,15 @@ module.exports = {
     verifyToken: (req, res, next) => {
         // console.log(req.headers);
         var token = req.cookies.authcookie; //retrieve authorization header’s content
-        console.log(token);
-
         if (!token) { //process the token
-            res.status(403);
-            return res.send({auth: 'false', message: 'Not authorized!'});
+            req.type = 'Public'; //Set user Type of Public if token is not present.
+            next();
         } else {
             // console.log(token);
             jwt.verify(token, config.key, (err, decoded) => {//verify token
                 if (err) {
                     res.status(403);
-                    return res.send({auth: 'false', message: 'Not authorized!'});
+                    return res.send({auth: 'false', message: 'Please Login Again'});
                 } else {
                     // console.log(decoded);
                     req.user_id = decoded.id; //decode the userid and store in req for use
@@ -38,18 +36,18 @@ module.exports = {
             });
         }
     },
-    checkToken:(req, res, token)=>{
-        jwt.verify(token, config.key, (err, decoded) => {//verify token
-            if (err) {
-                res.status(403);
-                return res.send({auth: 'false', message: 'Not authorized!'});
-            } else {
-                // console.log(decoded);
-                req.user_id = decoded.id; //decode the userid and store in req for use
-                req.type = decoded.type; //decode the type and store in req for use
-            }
-        });
-    },
+    // checkToken:(req, res, token)=>{
+    //     jwt.verify(token, config.key, (err, decoded) => {//verify token
+    //         if (err) {
+    //             res.status(403);
+    //             return res.send({auth: 'false', message: 'Not authorized!'});
+    //         } else {
+    //             // console.log(decoded);
+    //             req.user_id = decoded.id; //decode the userid and store in req for use
+    //             req.type = decoded.type; //decode the type and store in req for use
+    //         }
+    //     });
+    // },
     generateToken: async (user_id, type, expires = 86400) => {
         // console.log(user_id)
         // console.log(type)

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../partials/head', {title: title, type: type, path: path}); %>
+</head>
+
+<body class="home-template">
+    <div class="site-wrapper">
+        <%- include('../partials/header'); %>
+            <header class="main-header author-head">
+                <div class="vertical">
+                    <div class="main-header-content inner">
+                        <h1 class="post-title" style="font-size: 4.5rem;"><%-update?"Update":"Add"%> Games</h1>
+                    </div>
+                </div>
+            </header>
+            <main class="col-12 text-center pb-5 mb-5 content">
+                <div class="col-4 mx-auto mb-3">
+                    <img src=<%-update?"/api/"+game['game_pic_url']:"/assets/images/sp-games-poster.jpg"%> class="img-fluid">
+                </div>
+                <form class="col-8 mx-auto" name="game" id="game" method="POST" <%- update?` action=/api/game/${game['game_id']}?_method=PUT`: ' action="/api/game" '%> 
+                    onsubmit="return formValidate();" autocomplete="off" enctype="multipart/form-data">   
+                    <div class="form-group">
+                        <label for="title">Title</label>
+                        <input type="text" class="form-control" id="title" name="title" placeholder="GTA V" value="<%-update?game['title']:"";%>" required>
+                        <div class="invalid-feedback">
+                            Title Must not be Empty and must not More than 45 Characters.
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <input type="text" style="height: 10em;" class="form-control" id="description"
+                            name="description" placeholder="Game developed by rockstar" value="<%-update?game['description']:"";%>" required>
+                        <div class="invalid-feedback">
+                            Description Must not be Empty and must not More than 45 Characters.
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="price">Price</label>
+                            <input type="number" class="form-control" id="price" name="price" step="0.01" value="<%-update?game['price']:"";%>" required>
+                            <div class="invalid-feedback">
+                                Price should be Postive Number.
+                            </div>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="year">Year</label>
+                            <input type="number" step="1" class="form-control" id="year" name="year" value="<%-update?game['year']:"";%>">
+                            <div class="invalid-feedback">
+                                Year should be Postive Number in Valid Range.
+                            </div>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="platform">Platform</label>
+                            <select id="platform" name="platform" class="form-control">
+                                <%platforms.forEach((platform)=>{%>
+                                    <option <%-update&&platform.platform==game['platform']?'selected':'';%> >
+                                        <%-platform.platform%>
+                                    </option>
+                                    <%});%>
+                            </select>
+                        </div>
+
+                    </div>
+                    <div class="form-group">
+                        <label>Categories</label>
+                        <div class="row justify-content-center">
+                            <%categories.forEach((category)=>{%>
+                                <label class="mr-5"><input type="checkbox" class="checkboxes" name="categories"
+                                        value="<%-category['cat_id']%>" <%-update && game['categories'].includes(category['catname'])?"checked":""%>>
+                                    <%-category['catname']%>
+                                </label>
+                                <%})%>
+                                <input type="checkbox" class="d-none checkboxes" name="categories" value="_hidden" checked>
+                                <div class="invalid-feedback" id="cat-check">
+                                    Please select a category.
+                                </div>
+                        </div>
+                    </div>
+                    <div class="form-group col-4 mx-auto">
+                        <label for="game-pic">Upload Game Picture</label>
+                        <input type="file" name="game-pic" id="game-pic" class="text-center" placeholder="Upload Game Picture"/>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary d-block w-25 mx-auto">Submit</button>
+                </form>
+            </main>
+            <footer class="site-footer clearfix">
+                <%- include('../partials/footer'); %>
+            </footer>
+    </div>
+</body>
+<script>
+    function formValidate() {
+        var game = document.forms['game'];
+        var title = game['title'].value;
+        var description = game['description'].value;
+        var price = parseFloat(game['price'].value);
+        var year = parseInt(game['year'].value);
+        var platform = game['platform'].value;
+        var checkboxes = [...document.getElementsByClassName("checkboxes")];
+        var boxChecked = 0;
+
+        if (title.trim() == "" || title.length == 0 || title.length > 45) {
+            game['title'].classList.add("is-invalid");
+            return false;
+        } else {
+            game['title'].classList.remove("is-invalid");
+        }
+        if (description.trim() == "" || description.length == 0) {
+            game['description'].classList.add("is-invalid");
+            return false;
+        } else {
+            game['description'].classList.remove("is-invalid");
+        }
+        if (isNaN(price) || price < 0 || price > 9223372036854775807) {
+            game['price'].classList.add("is-invalid");
+            return false;
+        } else {
+            game['price'].classList.remove("is-invalid");
+        }
+        if (isNaN(year) || year < 1000 || year > 3000) {
+            game['year'].classList.add("is-invalid");
+            return false;
+        } else {
+            game['year'].classList.remove("is-invalid");
+        }
+        checkboxes.forEach((el) => {
+            boxChecked += el.checked;
+        })
+        if (boxChecked == 1) {
+            document.getElementById('cat-check').classList.add('d-block');
+            return false
+        } else {
+            document.getElementById('cat-check').classList.remove('d-block');
+        }
+        // return false
+    }
+
+</script>
+
+</html>

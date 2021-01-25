@@ -1,0 +1,19 @@
+<table class="table table-bordered">
+    <tbody>
+        <tr>
+            <td><%- review['created_at'] %></td>
+            <td class="text-right" ><h5 class="d-inline">Rating</h5>:
+                <%for(var i = 0; i<review['rating'];i++){%>
+                    <i class="fa fa-star" style="color:	#FFFF00; text-shadow: 0px 0px 2px #000;" aria-hidden="true"></i>
+                <%}%>
+                <%for(var i = review['rating']; i<5;i++){%>
+                    <i class="fa fa-star" style="color:	#bbb; text-shadow: 0px 0px 2px #000;" aria-hidden="true"></i>
+                <%}%>
+            </td>
+        </tr>
+        <tr>
+            <td class="w-25"><h5 class="ml-2"><%=review['username']%></h5><img class = "d-inline img-thumbnail"  src="/api/<%=review.profile_pic_url%>"> </td>
+            <td><%=review['content']%></td>
+        </tr>
+    </tbody>
+</table>

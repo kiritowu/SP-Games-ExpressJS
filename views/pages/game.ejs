@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../partials/head', {title: title, type: type, path: path}); %>
+</head>
+
+<body class="home-template">
+    <div class="site-wrapper">
+        <%- include('../partials/header'); %>
+        <header class="main-header author-head">
+            <div class="vertical">
+                <div class="main-header-content inner">
+                    <h1 class="post-title" style="font-size: 4.5rem;">
+                        <%- game?game.title:"404" %>
+                    </h1>
+                </div>
+            </div>
+        </header>
+        <main class="col-12 text-center pb-5 mb-5 content">
+            <% if (!game){%>
+                <h1>Game Not Found</h1>
+                <p>Please Search for Other Games</p>
+            <%}else{ %>
+                <article class="col-12 row">
+                    <img class="col-4 img-fluid" src="/api/<%-game['game_pic_url']%>" alt="<%-game['title']%>">
+                    <section class="col-7 offset-1 text-left">
+                        <p><%- game['description']%></p> 
+                        <%if(type == 'Admin'){%>
+                            <a class="btn btn-primary" href="/admin/game/<%-game['game_id']%>/update">Update Game</a>
+                            <form class="d-inline" method="post" action="/api/game/<%-game['game_id']%>?_method=DELETE" onSubmit="if(!confirm('Do you really want to delete this game?')){return false;}">
+                                <button class="btn btn-danger" type="submit">Delete Game</button>
+                            </form>
+                        <%}%>
+                        <table class="table mb-5">
+                            <tbody>
+                                <tr>
+                                    <th scope="row">Year</th>
+                                    <td><a href="?year=<%-game['year']%>">
+                                            <%- game['year']%>
+                                        </a></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Platform</th>
+                                    <td><a href="/search?platform=<%- game['platform']%>">
+                                            <%- game['platform']%>
+                                        </a></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Categories</th>
+                                    <td><%-game['categories'].join(", ")%></td>
+                                </tr>
+                                <tr>
+                                    <th scope="row">Rating</th>
+                                    <td>
+                                        <%var ratingSum = 0; var ratingAvg = 0%>
+                                        <%if(reviews.length !== 0){%>
+                                            <% reviews.forEach(review=>{%>
+                                                <%ratingSum += review['rating']%>
+                                            <%})%>
+                                            <%ratingAvg = parseInt(ratingSum/reviews.length)%>
+                                        <%}%>
+                                        <%for(var i = 0; i<ratingAvg;i++){%>
+                                            <i class="fa fa-star" style="color:	#FFFF00; text-shadow: 0px 0px 2px #000;" aria-hidden="true"></i>
+                                        <%}%>
+                                        <%for(var i = ratingAvg; i<5;i++){%>
+                                            <i class="fa fa-star" style="color:	#bbb; text-shadow: 0px 0px 2px #000;" aria-hidden="true"></i>
+                                        <%}%>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class='ribbon mt-5 ' contenteditable='true'>Price : S$ <%- parseFloat(game['price']).toFixed(2)%></div>
+                    </section>
+                </article>
+            <%}%>
+            <hr class='mt-5 mb-1' style=" border-top:solid #000;">
+            <section class="col-12 mt-5">
+                <% if(user && game){%>
+                    <h3>Leave your Review!</h3>
+                    <form method="post"
+                        action='/api/user/<%-uid%>/game/<%-gid%>/review'>
+                        <textarea name="content" id="content" row='5' cols="100" class="mt-2"
+                            maxlength="512" required <%-type=='Public' ?"disabled":'' %>>
+                        </textarea>
+                        <h5>Rating: <span id="ratingVal">0 </span> Star</h5>
+                        <div class="range">
+                            <input type="range" name="rating" min="0" max="5"
+                            value="0" id="rating" class="w-50 mx-auto form-control-range" >
+                            <p class="row w-50 mx-auto">
+                                <span class="mr-auto d-block">0 Star</span>
+                                <span class="ml-auto d-block">5 Star</span>
+                            </p>
+                        </div>
+                        <button type="submit"
+                            class="d-block mx-auto btn btn-dark btn-lg mt-5">Submit
+                            as <em><%-user['username']%></em>
+                        </button>
+                    </form>
+                <% }else if(game){ %>
+                    <h3>Please Log In to Leave your review!</h3>
+                <% } %>
+            </section>
+            <hr class='mt-5 mb-1' style="border-top:solid #000;">
+            
+            <section class="mt-5 col-12">
+                <% if(reviews.length !== 0){%>
+                    <% reviews.forEach((review)=>{%>
+                        <%- include('../partials/comments', {review: review}) %>
+                    <%})%>
+                <%}else if(game){%>
+                    <h3>No Review is Found, Why not you add your own?</h3>
+                <%}%>
+            </section>
+        </main>
+
+        <footer class="site-footer clearfix">
+            <%- include('../partials/footer'); %>
+        </footer>
+    </div>
+</body>
+<script>
+    window.addEventListener('load',()=>{
+        document.getElementById("rating").addEventListener('change',(e)=>{
+            console.log(document.getElementById("ratingVal"))
+            document.getElementById("ratingVal").innerHTML = e.target.value;
+        })
+    })
+</script>
+</html>

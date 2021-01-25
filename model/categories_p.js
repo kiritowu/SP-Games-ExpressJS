@@ -69,5 +69,26 @@ module.exports = {
                 console.error(err);
                 callback(err);
             });
-    }
+    },
+    getUniqueCategory: (callback) => {
+        var categories;
+        conn.connect()
+            .then(() => {
+                var getUniqueCategorySQL = `
+                    SELECT * FROM categories;
+                `;
+                return conn.query(getUniqueCategorySQL , []);
+            }).then((data) => {
+                categories = data;
+                return conn.close();
+            }, (err) => {
+                return conn.close().then(() => { throw err; });
+            }).then(() => {
+                callback(null, categories);
+            }).catch((err)=>{
+                console.error(err);
+                callback(err, null);
+            });
+    },
+    
 };

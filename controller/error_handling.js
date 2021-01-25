@@ -1,7 +1,7 @@
 //Error Handling
 //JSON validation Error Handling Middleware
 const { ValidationError } = require("express-json-validator-middleware"); //AJV Error Handling
-const multer = require('multer'); //Multer for Image Uploading
+const { MulterError } = require('multer'); //Multer for Image Uploading
 
 function validationErrorMiddleware(err, req, res, next) {
 	if (res.headersSent) {
@@ -25,17 +25,28 @@ function imageUploadingErrorMiddleware(err, req, res, next) {
 	if (res.headersSent) {
 		return next(err);
 	}
-	const isMulterError = err instanceof multer.MulterError;
+	if (err.message == 'File uploaded is not .jpg image file') {
+		return next({
+			"status": 400,
+			"statusMessage": {
+				"Result": "Bad Request",
+				"Message": err.message
+			}
+		});
+	}
+	const isMulterError = err instanceof MulterError;
 	if (!isMulterError) {
 		return next(err);
 	}
-
-	res.status(400).send({
-		"Result": "Bad Request",
-		"Message": err.message
-	});
-
-	next();
+	else {
+		return next({
+			"status": 400,
+			"statusMessage": {
+				"Result": "Bad Request",
+				"Message": err.message
+			}
+		});
+	}
 }
 
 function unknownErrorHandling(err, req, res, next) {
@@ -43,16 +54,30 @@ function unknownErrorHandling(err, req, res, next) {
 	if (res.headersSent) {
 		return next(err);
 	}
-	if (err.message) {
-		return res.status(500).send({
-			"Result": "Internal Error",
-			"Message": err.message
+	if (err.response) {
+		try {
+			err = err.response.data;
+		} catch {
+		}
+	}
+	var status = err.status ? err.status : 500;
+	if (err.statusMessage) {
+		return res.status(status).render('pages/error', {
+			'title': 'SP Games | Login',
+			'path': req.path,
+			'type': req.type ? req.type : "Public",
+			"Result": err.statusMessage.Result,
+			"Message": err.statusMessage.Message,
+			"pic":undefined
 		});
 	}
-	res.status(500).send({
+	res.status(status).render('pages/error', {
+		'title': 'SP Games | Login',
+		'path': req.path,
+		'type': req.type ? req.type : "Public",
 		"Result": "Internal Error",
 		"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
 	});
 }
 
-module.exports=[validationErrorMiddleware, imageUploadingErrorMiddleware, unknownErrorHandling];
+module.exports = [validationErrorMiddleware, imageUploadingErrorMiddleware, unknownErrorHandling];

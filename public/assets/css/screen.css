@@ -104,6 +104,7 @@ legend {
 	padding:0;
 }
 button,input,select,textarea {
+	resize: none;
 	font-family:inherit;
 	font-size:100%;
 	margin:0;
@@ -494,7 +495,6 @@ body.nav-opened .site-wrapper {
 	margin-bottom:5rem;
 	text-align:center;
 	background:#222 no-repeat center center;
-	background-image:url(../img/default.jpg);
 	background-size:cover;
 	overflow:hidden;
 }
@@ -1883,6 +1883,8 @@ a.btn-more {
 	text-decoration:none;
 }
 .grid {
+	display: flex;
+	flex-wrap: wrap;
 	margin-left:2.5%;
 	margin-right:2%;
 }
@@ -1945,7 +1947,6 @@ a.btn-more {
 	display:block;
 	width:25px;
 	height:25px;
-	background:url(../img/top.png) no-repeat center center;
 }
 footer.site-footer:after {
 	bottom:100%;
@@ -2264,3 +2265,39 @@ div#preloader {
 	padding:7px 12px;
 	height: 44px;
 }
+.ribbon {
+	background: #1B1B1A;
+	display: block;
+	color: #f4f4f4;
+	padding: 0.5em 0.7em;
+	font-weight: 900;
+	letter-spacing: 0.1em;
+	position: relative;
+	font-size: 1.2em;
+	line-height: 1.1em;
+	text-transform: uppercase;
+	transform-style: preserve-3d;
+	transform: rotate(-10deg) skew(-10deg, 10deg);
+  }
+  .ribbon:before, .ribbon:after {
+	content: "";
+	width: 0;
+	height: 2em;
+	display: block;
+	background: #1B1B1A;
+	position: absolute;
+	border-style: solid;
+	border-width: 0.5em;
+	z-index: -1;
+	transform: translateZ(-1em);
+  }
+  .ribbon:before {
+	left: -0.5em;
+	top: 0.5em;
+	border-color: #363635 #1B1B1A #363635 #363635	;
+  }
+  .ribbon:after {
+	right: -0.5em;
+	top: -0.5em;
+	border-color: #363635 #363635 #363635 #272723;
+  }
