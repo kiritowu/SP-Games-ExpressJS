@@ -11,16 +11,17 @@
             <header class="main-header author-head">
                 <div class="vertical">
                     <div class="main-header-content inner">
-                        <h1 class="post-title" style="font-size: 4.5rem;">Add Category</h1>
+                        <h1 class="post-title" style="font-size: 4.5rem;"><%=update?category?'Update Game':'Error 404':'Add Category'%> </h1>
                     </div>
                 </div>
             </header>
             <main class="col-12 text-center pb-5 mb-5 content">
-                <form class="col-8 mx-auto" name="category" method="POST" action="/api/category/"
+                <%if (category || !update){%>
+                <form class="col-8 mx-auto" name="category" method="POST" <%- update?` action="/api/category/${category['cat_id']}?_method=PUT"`: ` action="/api/category/"`%>
                     onsubmit="return formValidate();" autocomplete="off">
                     <div class="form-group">
                         <label for="catname">Category Name</label>
-                        <input type="text" class="form-control" id="catname" name="catname" placeholder="RPG" required>
+                        <input type="text" class="form-control" id="catname" name="catname" value = "<%=update?category['catname']:""%>" required>
                         <div class="invalid-feedback">
                             Category Name Must not be Empty and must not More than 45 Characters.
                         </div>
@@ -28,13 +29,16 @@
                     <div class="form-group">
                         <label for="description">Description</label>
                         <input type="text" style="height: 10em;" class="form-control" id="description"
-                            name="description" placeholder="Role play games" required>
+                            name="description" value= "<%=update?`${category['description']} `:""%>" required>
                         <div class="invalid-feedback">
                             Description Must not be Empty and must not More than 512 Characters.
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary">Submit</button>
                 </form>
+                <%}else{%>
+                    <h1>Catgory is not Available for Update!</h1>
+                <%}%>
             </main>
             <footer class="site-footer clearfix">
                 <%- include('../partials/footer'); %>

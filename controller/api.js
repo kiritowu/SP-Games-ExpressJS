@@ -3,13 +3,7 @@
 //| Class         | DAAA/FT/1B/01 |
 //| Admission No. | 2036504       |
 //+---------------+---------------+
-//.---------------.---------------.
-//| Name          | Li Yifan      |
-//:---------------+---------------:
-//| Class         | DAAA/FT/1B/01 |
-//:---------------+---------------:
-//| Admission No. | 2011860       |
-//'---------------'---------------'
+
 //Express 
 const express = require('express');
 //AJV Validation Library
@@ -59,12 +53,13 @@ The following notation indicates the Accessibility of each Endpoint
 */
 
 var router = express.Router();
+//(**) Question 1: Read all Users
 router.get("/users/", (req, res, next) => {
 	if (req.type !== "Admin") { //Only Admin can access the content or perform the query
 		return next({
 			"status": 403,
 			"statusMessage": {
-				"Result": "Unauthorized",
+				"Result": "Forbidden",
 				"Message": "This is an admin classified action. Please login with an Admin account."
 			}
 		});
@@ -122,7 +117,6 @@ var userField = [
 	{ name: "profile-pic", maxCount: 1 }
 ]; //For uplaod multipart/form data
 // when do postman request use form data to send all datas including text and file(profile picture)
-
 router.post("/users/", upload.fields(userField), validate({ body: userSchema }), (req, res, next) => {
 	if (req.fileName) {
 		req.body.profile_pic_url = `/users/pic/${req.fileName}`;
@@ -257,9 +251,8 @@ router.post("/users/login", validate({ body: userLoginSchema }), (req, res, next
 	});
 });
 
-
 //Category Table
-// Get Unique Category
+//() Get Unique Category
 router.get('/category', (req, res, next) => {
 	categories.getUniqueCategory((err, categories) => {
 		if (err) {
@@ -272,7 +265,7 @@ router.get('/category', (req, res, next) => {
 			});
 		}
 		res.status(200).send(categories);
-	})
+	});
 });
 
 //(**) Question 4: Insert new category
@@ -297,7 +290,7 @@ router.post("/category/", validate({ body: categorySchema }), (req, res, next) =
 		return next({
 			"status": 403,
 			"statusMessage": {
-				"Result": "Unauthorized",
+				"Result": "Forbidden",
 				"Message": "This is an admin classified action. Please login with an Admin account."
 			}
 		});
@@ -321,7 +314,7 @@ router.post("/category/", validate({ body: categorySchema }), (req, res, next) =
 				}
 			});
 		}
-		res.redirect('/search');
+		res.redirect('/admin/category/update');
 	});
 });
 
@@ -331,7 +324,7 @@ router.put("/category/:cat_id", validate({ body: categorySchema }), (req, res, n
 		return next({
 			"status": 403,
 			"statusMessage": {
-				"Result": "Unauthorized",
+				"Result": "Forbidden",
 				"Message": "This is an admin classified action. Please login with an Admin account."
 			}
 		});
@@ -373,8 +366,53 @@ router.put("/category/:cat_id", validate({ body: categorySchema }), (req, res, n
 				}
 			});
 		}
-		res.status(204).send(); //Cache the header for 86400s (24 Hour).send(users);
+		res.redirect('/admin/category/update');
 
+	});
+});
+
+//(**) Question 5: Update category
+router.delete("/category/:cat_id", (req, res, next) => {
+	if (req.type !== "Admin") { //Only Admin can access the content or perform the query
+		return next({
+			"status": 403,
+			"statusMessage": {
+				"Result": "Forbidden",
+				"Message": "This is an admin classified action. Please login with an Admin account."
+			}
+		});
+	}
+	const cat_id = parseInt(req.params.cat_id);
+	if (isNaN(cat_id)) {
+		return next({
+			"status": 400,
+			"statusMessage": {
+				"Result": "Bad Request",
+				"Message": "Category id is not an Integer."
+			}
+		});
+	}
+
+	categories.deleteCategory(cat_id, (err, affectedRows) => {
+		if (err) {
+			return next({
+				"status": 500,
+				"statusMessage": {
+					"Result": "Internal Error",
+					"Message": "An Unknown Error have occured. Please Contact our Admin for further assistance."
+				}
+			});
+		}
+		if (affectedRows === 0) {
+			return next({
+				"status": 404,
+				"statusMessage": {
+					"Result": "Not Found",
+					"Message": "Category is not found. Please try other ID."
+				}
+			});
+		}
+		return res.redirect('/admin/category/update');
 	});
 });
 
@@ -428,7 +466,7 @@ router.post("/game/", upload.fields(gameField), validate({ body: gameSchema }), 
 		return next({
 			"status": 403,
 			"statusMessage": {
-				"Result": "Unauthorized",
+				"Result": "Forbidden",
 				"Message": "This is an admin classified action. Please login with an Admin account."
 			}
 		});
@@ -499,7 +537,6 @@ router.get('/game/pic/:filename', (req, res, next) => {
 	});
 });
 
-
 //() Question 7: get games based on platform
 router.get("/games/:platform", (req, res, next) => {
 	var platform = req.params.platform;
@@ -530,7 +567,7 @@ router.delete("/game/:id", (req, res, next) => {
 		return next({
 			"status": 403,
 			"statusMessage": {
-				"Result": "Unauthorized",
+				"Result": "Forbidden",
 				"Message": "This is an admin classified action. Please login with an Admin account."
 			}
 		});
@@ -548,6 +585,15 @@ router.delete("/game/:id", (req, res, next) => {
 
 	games.deleteGame(gameId, (err, affectedRows) => {
 		if (err) {
+			if (err.errno === -4058) {
+				return next({
+					"status": 404,
+					"statusMessage": {
+						"Result": "Not Found",
+						"Message": "Game Picture is not available in the database. Please Contact our Admin for further assistance."
+					}
+				});
+			}
 			return next({
 				"status": 500,
 				"statusMessage": {
@@ -557,11 +603,13 @@ router.delete("/game/:id", (req, res, next) => {
 			});
 		}
 		if (affectedRows === 0) {
-			res.status(404).send({
-				"Result": "Not Found",
-				"Message": "GameID is not found. Please try other ID."
+			return next({
+				"status": 404,
+				"statusMessage": {
+					"Result": "Not Found",
+					"Message": "GameID is not found. Please try other ID."
+				}
 			});
-			return;
 		}
 		res.redirect('/search'); //Cache the header for 86400s (24 Hour).send(users);
 	});
@@ -573,7 +621,7 @@ router.put("/game/:id", upload.fields(gameField), validate({ body: gameSchema })
 		return next({
 			"status": 403,
 			"statusMessage": {
-				"Result": "Unauthorized",
+				"Result": "Forbidden",
 				"Message": "This is an admin classified action. Please login with an Admin account."
 			}
 		});
@@ -612,7 +660,7 @@ router.put("/game/:id", upload.fields(gameField), validate({ body: gameSchema })
 					"status": 422,
 					"statusMessage": {
 						"Result": "Unprocessable Entity",
-						"Message": "The categories does not exist."
+						"Message": "The Game does not exist."
 					}
 				});
 			}
@@ -627,6 +675,7 @@ router.put("/game/:id", upload.fields(gameField), validate({ body: gameSchema })
 		res.redirect(`/game/${gameId}`);
 	});
 });
+
 // Search Games
 router.get('/search', (req, res, next) => {
 	games.searchGames(req.query, (err, game) => {
@@ -678,11 +727,13 @@ router.get('/game/:gameID', (req, res, next) => {
 			});
 		}
 		if (game.length === 0) {
-			res.status(404).send({
-				"Result": "Not Found",
-				"Message": "Game Does Not Exist. Please Try Other Game ID."
+			return next({
+				"status": 404,
+				"statusMessage": {
+					"Result": "Not Found",
+					"Message": "Game Does Not Exist. Please Try Other Game ID."
+				}
 			});
-			return;
 		}
 		res.status(200).send(game);
 	});
@@ -702,12 +753,12 @@ var reviewSchema = {
 	}
 };
 router.post("/user/:uid/game/:gid/review/", validate({ body: reviewSchema }), (req, res, next) => {
-	if (req.userId == 'Public') {
+	if (req.type == 'Public') {
 		return next({
-			"status": 401,
+			"status": 403,
 			"statusMessage": {
-				"Result": "Unauthorized",
-				"Message": err.message
+				"Result": "Forbidden",
+				"Message": "This is an admin classified action. Please login with an Admin account."
 			}
 		});
 	}
@@ -746,6 +797,15 @@ router.post("/user/:uid/game/:gid/review/", validate({ body: reviewSchema }), (r
 			"statusMessage": {
 				"Result": "Bad Request",
 				"Message": "game id is not an Integer."
+			}
+		});
+	}
+	if(userId !== req.user_id){
+		return next({
+			"status": 401,
+			"statusMessage": {
+				"Result": "Unauthorized",
+				"Message": "ID Sent in Token Does not Match ID Sent in Review. Please Re-Login to solve this problem."
 			}
 		});
 	}
@@ -804,7 +864,6 @@ router.get("/game/:id/review", (req, res, next) => {
 		res.status(200).send(data);
 	});
 });
-
 
 
 module.exports = router;

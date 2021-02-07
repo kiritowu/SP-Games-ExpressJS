@@ -12,7 +12,7 @@
                 <div class="vertical">
                     <div class="main-header-content inner">
                         <h1 class="post-title" style="font-size: 4.5rem;">Admin Board</h1>
-                        <p class="text-light">Welcome <%-user.username%>!</p>
+                        <p class="text-light">Welcome <%=user.username%>!</p>
                     </div>
                 </div>
             </header>
@@ -25,6 +25,7 @@
                 <div class="wraps">
                     <h1>Categories</h1>
                     <a class="btn btn-dark btn-lg w-25 mx-auto d-block mb-5" href="/admin/category/new">Add New Category</a>
+                    <a class="btn btn-dark btn-lg w-25 mx-auto d-block mb-5" href="/admin/category/update">Update Existing Category</a>
                 </div>
             </main>
             <footer class="site-footer clearfix">

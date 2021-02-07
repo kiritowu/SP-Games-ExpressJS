@@ -1,3 +1,9 @@
+//+---------------+---------------+
+//| Name          | Wong Zhao Wu  |
+//| Class         | DAAA/FT/1B/01 |
+//| Admission No. | 2036504       |
+//+---------------+---------------+
+
 //Error Handling
 //JSON validation Error Handling Middleware
 const { ValidationError } = require("express-json-validator-middleware"); //AJV Error Handling
@@ -63,20 +69,21 @@ function unknownErrorHandling(err, req, res, next) {
 	var status = err.status ? err.status : 500;
 	if (err.statusMessage) {
 		return res.status(status).render('pages/error', {
-			'title': 'SP Games | Login',
+			'title': 'SP Games | Error',
 			'path': req.path,
 			'type': req.type ? req.type : "Public",
 			"Result": err.statusMessage.Result,
 			"Message": err.statusMessage.Message,
-			"pic":undefined
+			"pic":false
 		});
 	}
 	res.status(status).render('pages/error', {
-		'title': 'SP Games | Login',
+		'title': 'SP Games | Error',
 		'path': req.path,
 		'type': req.type ? req.type : "Public",
 		"Result": "Internal Error",
-		"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
+		"Message": "An Unknown Error have occured. Please contact our Admin for further assistance.",
+		"pic":false
 	});
 }
 

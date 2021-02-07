@@ -3,14 +3,6 @@
 //| Class         | DAAA/FT/1B/01 |
 //| Admission No. | 2036504       |
 //+---------------+---------------+
-//.---------------.---------------.
-//| Name          | Li Yifan      |
-//:---------------+---------------:
-//| Class         | DAAA/FT/1B/01 |
-//:---------------+---------------:
-//| Admission No. | 2011860       |
-//'---------------'---------------'
-
 
 const dbUser = 'root';
 const dbPassword = 'root';
@@ -23,8 +15,7 @@ const dbconnect = {
             host: "localhost",
             user: dbUser, 
             password: dbPassword ,
-            database: schema,// TO cater case of connecting to multiple schema
-						// retain DATE as a string
+            database: schema,
             port:3306,
             dateStrings: true,
           

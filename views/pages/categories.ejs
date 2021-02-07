@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../partials/head', {title: title, type: type, path: path}); %>
+</head>
+
+<body class="home-template">
+    <div class="site-wrapper">
+        <%- include('../partials/header'); %>
+            <header class="main-header author-head" style="background: #222">
+                <div class="vertical">
+                    <div class="main-header-content inner">
+                        <h1 class="post-title" style="font-size: 4.5rem;">Update Existing Category</h1>
+                    </div>
+                </div>
+            </header>
+
+            <main id="content" class="content" role="main">
+                <div class="wraps">
+                    <div class="grid text-center">
+                        <% if (categories.length===0) {%>
+                            <div class="col-12">
+                                <article class="post tag-romance">
+                                    <div class="wrapgriditem">
+                                        <header class="post-header">
+                                            <h2 class="post-title">404 Not Found
+                                            </h2>
+                                        </header>
+                                        <section class="post-excerpt">
+                                            <p>
+                                                There are no categories available. Please add new categories!
+                                            </p>
+                                        </section>
+                                    </div>
+                                </article>
+                            </div>
+                        <%} else {categories.forEach((category, index)=>{%>
+                            <%- include('../partials/category_article', {category:category})%>
+                        <%})}%>
+                    </div>
+                </div>
+                <a class="btn btn-dark btn-lg w-25 mx-auto d-block mb-5" href="/admin/category/new">Add New Category</a>
+            </main>
+            
+            <footer class="site-footer clearfix">
+                <%- include('../partials/footer'); %>
+            </footer>
+    </div>
+</body>
+</html>

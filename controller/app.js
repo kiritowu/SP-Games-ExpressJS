@@ -3,13 +3,7 @@
 //| Class         | DAAA/FT/1B/01 |
 //| Admission No. | 2036504       |
 //+---------------+---------------+
-//.---------------.---------------.
-//| Name          | Li Yifan      |
-//:---------------+---------------:
-//| Class         | DAAA/FT/1B/01 |
-//:---------------+---------------:
-//| Admission No. | 2011860       |
-//'---------------'---------------'
+
 
 const express = require('express'); //Express router
 const cookieParser = require('cookie-parser');
@@ -39,19 +33,26 @@ app.use(cookieParser());
 app.use(tokenAuth.verifyToken);
 //Override POST method to PUT or DELTE where applicable
 app.use(methodOverride('_method'));
-
+//Ejs To Render HTML Pages
 app.set('view engine', 'ejs');
 
-app.get('/', (req, res) => {
-	// if(req.cookies.authcookie){
-	// 	tokenAuth.checkToken(req, res, req.cookies.authcookie);
-	// } 
-	data = {
-		'title': 'SP Games',
-		'path': req.path,
-		'type': req.type ? req.type : "Public",
-	};
-	res.render('pages/index.ejs', data);
+//Public Endpoints
+app.get('/', (req, res, next) => {
+	var games;
+	axios.get('http://localhost:8081/api/search',{ 
+		withCredentials: true
+	}).then((response)=>{
+		games = response.data.games;
+		data = {
+			'title': 'SP Games',
+			'path': req.path,
+			'type': req.type ? req.type : "Public",
+			'games': games,
+			'update': req.type == "Admin" ? true : false //Showing Update Game Buttons if Admin
+		};
+		res.render('pages/index.ejs', data);
+	}).catch(next);
+	
 });
 app.get('/login', (req, res) => {
 	data = {
@@ -62,7 +63,7 @@ app.get('/login', (req, res) => {
 	};
 	res.render('pages/login.ejs', data);
 });
-app.post('/login', (req, res) => {
+app.post('/login', (req, res, next) => {
 	users.userLogin(req.body, (err, user) => {
 		if (err) {
 			if (err.errCode == 401) {
@@ -75,13 +76,16 @@ app.post('/login', (req, res) => {
 				};
 				res.render('pages/login.ejs', data);
 			}
-			return res.status(500).send({
-				"Result": "Internal Error",
-				"Message": "An Unknown Error have occured. Please Contact our Admin for further assistance."
+			return next({
+				"status": 500,
+				"statusMessage": {
+					"Result": "Internal Error",
+					"Message": "An Unknown Error have occured. Please contact our Admin for further assistance."
+				}
 			});
 		} else {
 			return res.status(200)
-				.cookie('authcookie', user.token, { maxAge: 3.6e+6, path: '/' })  //Cache the header for 86400s (24 Hour)
+				.cookie('authcookie', user.token, { maxAge: 1.08e+7, path: '/' })  //Cache the header for 86400s (24 Hour)
 				.redirect(`/`);
 		}
 	});
@@ -119,22 +123,18 @@ app.get('/search', async (req, res, next) => {
 app.get('/game/:gameID', async (req, res, next) => {
 	const gameID = parseInt(req.params.gameID);
 	if (isNaN(gameID)) {
-		next({
-			"Result": "Bad Request",
-			"Message": "Game id is Not an Integer."
+		return next({
+			"status": 400,
+			"statusMessage": {
+				"Result": "Bad Request",
+				"Message": "Game id is not an Integer."
+			}
 		});
-		return;
 	}
 	var games = [];
 	var reviews = [];
 	var user = [];
-	if (isNaN(gameID)) {
-		res.status(400).send({
-			"Result": "Bad Request",
-			"Message": "User id is not an Integer."
-		});
-		return;
-	}
+	
 	axios.get(`http://localhost:8081/api/search/?id=${gameID}`, {
 		withCredentials: true,
 	}).then((response) => {
@@ -172,7 +172,7 @@ app.get('/game/:gameID', async (req, res, next) => {
 			user = response.data;
 		}
 		var data = {
-			'title': 'SP Games | Login',
+			'title': games[0]? `SP Games | ${games[0].title}`:`SP Games | Not Found`,
 			'path': req.path,
 			'type': req.type ? req.type : "Public",
 			'uid': req.user_id ? req.user_id : -1,
@@ -182,14 +182,16 @@ app.get('/game/:gameID', async (req, res, next) => {
 			'reviews': reviews
 		};
 		res.render('pages/game.ejs', data);
-	});
+	}).catch(next);
 });
+
+//Admin Classified Endpoints
 app.get('/admin', (req, res, next) => {
 	if (req.type !== 'Admin') {
 		return next({
-			"status": 401,
+			"status": 403,
 			"statusMessage": {
-				"Result": "Unauthorized",
+				"Result": "Forbidden",
 				"Message": "This is Admin classified Action. Please Log In with Admin Account!"
 			}
 		});
@@ -218,18 +220,18 @@ app.get('/admin', (req, res, next) => {
 	});
 });
 app.get('/admin/game/new', (req, res, next) => {
-	var categories = [];
-	var platforms = [];
 	if (req.type !== 'Admin') {
 		return next({
-			"status": 401,
+			"status": 403,
 			"statusMessage": {
-				"Result": "Unauthorized",
+				"Result": "Forbidden",
 				"Message": "This is Admin classified Action. Please Log In with Admin Account!"
 			}
 		});
 	}
-	// console.log(req.cookies.authcookie)
+	var categories = [];
+	var platforms = [];
+
 	axios.get('http://localhost:8081/api/category', {
 		withCredentials: true,
 		headers: {
@@ -237,11 +239,11 @@ app.get('/admin/game/new', (req, res, next) => {
 		}
 	}).then((response) => {
 		categories = response.data;
-		return axios.get('http://localhost:8081/api/search', { withCredentials: true })
+		return axios.get('http://localhost:8081/api/search', { withCredentials: true });
 	}).then(response => {
 		platforms = response.data.platform;
 		data = {
-			'title': 'SP Games | Login',
+			'title': 'SP Games | New Game',
 			'path': req.path,
 			'type': req.type ? req.type : "Public",
 			'categories': categories,
@@ -250,14 +252,22 @@ app.get('/admin/game/new', (req, res, next) => {
 			'game': undefined
 		};
 		res.render('pages/game_form', data);
-	}).catch((err) => {
-		return next(err);
-	});
+	}).catch(next);
 });
 app.get('/admin/game/:gameID/update', (req, res, next) => {
+	if (req.type !== 'Admin') {
+		return next({
+			"status": 403,
+			"statusMessage": {
+				"Result": "Forbidden",
+				"Message": "This is Admin classified Action. Please Log In with Admin Account!"
+			}
+		});
+	}
 	var game = [];
 	var categories = [];
 	var platforms = [];
+	
 	const gameID = parseInt(req.params.gameID);
 	if (isNaN(gameID)) {
 		next({
@@ -266,62 +276,105 @@ app.get('/admin/game/:gameID/update', (req, res, next) => {
 		});
 		return;
 	}
-	if (req.type !== 'Admin') {
-		return next({
-			"status": 401,
-			"statusMessage": {
-				"Result": "Unauthorized",
-				"Message": "This is Admin classified Action. Please Log In with Admin Account!"
-			}
-		});
-	}
 	axios.get(`http://localhost:8081/api/search/?id=${gameID}`, {
 		withCredentials: true
 	}).then((response) => {
-		game = response.data;
+		game = response.data.games;
+		platforms = response.data.platform;
 		return axios.get('http://localhost:8081/api/category', {
 			withCredentials: true,
 			headers: {
 				Cookie: `authcookie= ${req.cookies.authcookie};`
 			}
 		});
-	}).then((response) => {
-		categories = response.data;
-		return axios.get('http://localhost:8081/api/search', { withCredentials: true })
 	}).then(response => {
-		platforms = response.data.platform;
+		categories = response.data;
 		data = {
-			'title': 'SP Games | Login',
+			'title': game[0]?`SP Games | ${game[0].title} Update`:`SP Games | Not Found`,
 			'path': req.path,
 			'type': req.type ? req.type : "Public",
 			'categories': categories,
 			'platforms': platforms,
 			'update': true,
-			'game': game.games[0]
+			'game': game[0]
 		};
 		res.render('pages/game_form', data);
-	}).catch((err) => {
-		return next(err);
-	});
+	}).catch(next);
 });
 app.get('/admin/category/new', (req, res, next) => {
 	if (req.type !== 'Admin') {
 		return next({
-			"status": 401,
+			"status": 403,
 			"statusMessage": {
-				"Result": "Unauthorized",
+				"Result": "Forbidden",
 				"Message": "This is Admin classified Action. Please Log In with Admin Account!"
 			}
 		});
 	}
 	data = {
-		'title': 'SP Games | Login',
+		'title': 'SP Games | New Category',
 		'path': req.path,
 		'type': req.type ? req.type : "Public",
+		'category':undefined,
+		'update':false,
 	};
 	res.render('pages/category_form', data);
 });
-
+app.get('/admin/category/update', (req, res, next) => {
+	var categories = [];
+	if (req.type !== 'Admin') {
+		return next({
+			"status": 403,
+			"statusMessage": {
+				"Result": "Forbidden",
+				"Message": "This is Admin classified Action. Please Log In with Admin Account!"
+			}
+		});
+	}
+	axios.get('http://localhost:8081/api/category')
+		.then((response) => {
+			categories = response.data;
+			data = {
+				'title': 'SP Games | Update Category',
+				'path': req.path,
+				'type': req.type ? req.type : "Public",
+				'categories': categories
+			};
+			res.render('pages/categories', data);
+		}).catch(next);
+});
+app.get('/admin/category/:catID/update', (req, res, next) => {
+	var category = [];
+	if (req.type !== 'Admin') {
+		return next({
+			"status": 403,
+			"statusMessage": {
+				"Result": "Forbidden",
+				"Message": "This is Admin classified Action. Please Log In with Admin Account!"
+			}
+		});
+	}
+	const catID = parseInt(req.params.catID);
+	if (isNaN(catID)) {
+		next({
+			"Result": "Bad Request",
+			"Message": "Cat id is Not an Integer."
+		});
+		return;
+	}
+	axios.get('http://localhost:8081/api/category')
+		.then((response) => {
+			category = response.data.filter(c => c.cat_id == catID)[0];
+			data = {
+				'title': 'SP Games | Update Category',
+				'path': req.path,
+				'type': req.type ? req.type : "Public",
+				'category': category,
+				'update':true
+			};
+			res.render('pages/category_form', data);
+		}).catch(next);
+});
 //Public Assets (CSS)
 app.use(express.static('public'));
 
@@ -330,7 +383,9 @@ app.use('/api', api);
 
 //Error Handling
 app.use(...errorHandler);
-app.use((req,res, next) => {
+
+//404 Not Found Page
+app.use((req, res) => {
 	res.status(404).render('pages/error', {
 		'title': 'SP Games | Login',
 		'path': req.path,

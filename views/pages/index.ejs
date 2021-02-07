@@ -36,12 +36,34 @@
                         <button class="btn btn-dark btn-lg ml-3" type="submit"><i class="fa fa-search"></i></button>
                     </div>
                 </form>
+                <div class="wraps">
+                    <div class="grid text-center">
+                        <% if (games.length===0) {%>
+                            <div class="col-12">
+                                <article class="post tag-romance">
+                                    <div class="wrapgriditem">
+                                        <header class="post-header">
+                                            <h2 class="post-title">404 Not Found
+                                            </h2>
+                                        </header>
+                                        <section class="post-excerpt">
+                                            <p>
+                                                It looks like there aren't many great matches for your search
+                                            </p>
+                                        </section>
+                                    </div>
+                                </article>
+                            </div>
+                        <%} else {games.forEach((game, index)=>{%>
+                            <%- include('../partials/game_article', {game:game})%>
+                        <%})}%>
+                    </div>
+                </div>
             </main>
-
+            
             <footer class="site-footer clearfix">
                 <%- include('../partials/footer'); %>
             </footer>
     </div>
 </body>
-
 </html>
