@@ -3,13 +3,7 @@
 //| Class         | DAAA/FT/1B/01 |
 //| Admission No. | 2036504       |
 //+---------------+---------------+
-//.---------------.---------------.
-//| Name          | Li Yifan      |
-//:---------------+---------------:
-//| Class         | DAAA/FT/1B/01 |
-//:---------------+---------------:
-//| Admission No. | 2011860       |
-//'---------------'---------------'
+
 Database = require("./db_promise");
 conn = new Database();
 
@@ -90,5 +84,24 @@ module.exports = {
                 callback(err, null);
             });
     },
-    
+    deleteCategory : (cat_id, callback) => {
+        var affectedRows;
+        conn.connect()
+            .then(() => {
+                var deleteCategorySQL = `
+                    DELETE FROM categories WHERE cat_id = ?;
+                `;
+                return conn.query(deleteCategorySQL , [cat_id]);
+            }).then((data) => {
+                affectedRows = data.affectedRows;
+                return conn.close();
+            }, (err) => {
+                return conn.close().then(() => { throw err; });
+            }).then(() => {
+                callback(null, affectedRows);
+            }).catch((err)=>{
+                console.error(err);
+                callback(err, null);
+            });
+    },
 };

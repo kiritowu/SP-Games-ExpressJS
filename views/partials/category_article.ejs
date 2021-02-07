@@ -1,0 +1,22 @@
+<div class="grid-item">
+    <article class="post tag-romance">
+        <div class="wrapgriditem">
+            <header class="post-header">
+                <h2 class="post-title"><a href="/admin/category/<%=category['cat_id'] %>/update"><%= category['catname']%></a>
+                </h2>
+            </header>
+            <section class="post-excerpt">
+                <p>
+                   <%= category['description'] %>  <a class="read-more" href="/admin/category/<%=category['cat_id'] %>/update">&raquo;</a>
+                </p>
+                <a class="btn btn-primary" href="/admin/category/<%=category['cat_id'] %>/update">Update Category</a>
+                <form class="d-inline" method="post" action="/api/category/<%=category['cat_id']%>?_method=DELETE" onSubmit="if(!confirm('Do you really want to delete this category?')){return false;}">
+                    <button class="btn btn-danger" type="submit">Delete Category</button>
+                </form>
+            </section>
+            <footer class="post-meta">
+                <time class="post-date" datetime="<%= category.created_at%>"><%= category.created_at%></time>
+            </footer>
+        </div>
+    </article>
+</div>

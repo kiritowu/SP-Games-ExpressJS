@@ -3,15 +3,10 @@
 //| Class         | DAAA/FT/1B/01 |
 //| Admission No. | 2036504       |
 //+---------------+---------------+
-//.---------------.---------------.
-//| Name          | Li Yifan      |
-//:---------------+---------------:
-//| Class         | DAAA/FT/1B/01 |
-//:---------------+---------------:
-//| Admission No. | 2011860       |
-//'---------------'---------------'
-Database = require("./db_promise");
-conn = new Database();
+
+var Database = require("./db_promise");
+var conn = new Database();
+var fs = require('fs');
 
 module.exports = {
     //Qns 6: Create game and map it to correct categories
@@ -103,6 +98,17 @@ module.exports = {
         var result;
         conn.connect()
             .then(() => {
+                return conn.query("SELECT game_pic_url FROM games WHERE game_id = ?", [gameId]);
+            }).then((response) => {
+                if(response[0]){
+                    if(response[0].game_pic_url !== '/game/pic/default.jpg'){
+                        try{
+                            fs.unlinkSync(`${__dirname}/../tmp/images/game-pic/${response[0].game_pic_url.split('/').slice(-1)}`);
+                        }catch(err){
+                            throw err;
+                        }
+                    }
+                }
                 var deleteGameSQL = `
                     DELETE FROM games WHERE game_id = ?;
                 `;
@@ -129,9 +135,13 @@ module.exports = {
         var title = game.title;
         var categories = game.categories;
         var game_pic_url = game.game_pic_url;
-        conn.connect()
-            .then(() => {
-                var updateGamesSQL = `
+        conn.connect().then(() => {
+            if(game_pic_url=='/game/pic/default.jpg'){
+                return conn.query("SELECT game_pic_url FROM games WHERE game_id = ?",[gameId]);
+            }
+        }).then((response) => {
+            game_pic_url = response[0]?response[0].game_pic_url:game_pic_url;
+            var updateGamesSQL = `
                 UPDATE
                 games
                 SET
@@ -177,6 +187,7 @@ module.exports = {
         var max = properties.max ? properties.max : "9223372036854775807"; // Maximum value of BigInt
         var min = properties.min ? properties.min : "0";
         var year = properties.year ? properties.year : "%";
+        var cat =  properties.cat ? properties.cat : undefined;
         conn.connect()
             .then(() => {
                 var searchGameSQL = `
@@ -186,7 +197,7 @@ module.exports = {
                         game_id like ? AND
                         title like ? AND 
                         (price BETWEEN ? AND ?) AND
-                        year like ?
+                        year like ? 
                     ` + (properties.platform ? `AND platform in (?) ` : "") + { "asc": "ORDER BY price ASC", "desc": "ORDER BY price DESC", "def": "", undefined: "" }[properties.sortBy] + ";";
                 return conn.query(searchGameSQL, [id, title, min, max, year, properties.platform]);
             }).then((data) => {
@@ -209,6 +220,11 @@ module.exports = {
             }).then(() => {
                 for (var i = 0; i < games.length; i++) {
                     games[i].categories = categories[i].map(category => category.catname);
+                }
+                if(cat){
+                    games = games.filter(game=>{
+                        return game.categories.includes(cat);
+                    });
                 }
                 callback(null, games);
             }).catch((err) => {

@@ -3,13 +3,7 @@
 //| Class         | DAAA/FT/1B/01 |
 //| Admission No. | 2036504       |
 //+---------------+---------------+
-//.---------------.---------------.
-//| Name          | Li Yifan      |
-//:---------------+---------------:
-//| Class         | DAAA/FT/1B/01 |
-//:---------------+---------------:
-//| Admission No. | 2011860       |
-//'---------------'---------------'
+
 Database = require("./db_promise");
 const conn = new Database();
 const pwdAuth = require("../auth/pwdAuth");

@@ -11,13 +11,13 @@
             <header class="main-header author-head">
                 <div class="vertical">
                     <div class="main-header-content inner">
-                        <h1 class="post-title" style="font-size: 4.5rem;"><%- Result%></h1>
+                        <h1 class="post-title" style="font-size: 4.5rem;"><%= Result%></h1>
                     </div>
                 </div>
             </header>
             <main class="col-12 text-center pb-5 mb-5 content">
-                <h3 class="mb-5"><%-Message%></h3>
-                <img src="<%-pic?pic:"https://miro.medium.com/max/1618/1*DcVCVewetAziLLCsCe4hCg.jpeg"%>" class="img w-25 mx-auto" >
+                <h3 class="mb-5"><%=Message%></h3>
+                <img src="<%=pic?pic:"https://miro.medium.com/max/1618/1*DcVCVewetAziLLCsCe4hCg.jpeg"%>" class="img w-25 mx-auto" >
             </main>
             <footer class="site-footer clearfix">
                 <%- include('../partials/footer'); %>

@@ -12,7 +12,7 @@
             <div class="vertical">
                 <div class="main-header-content inner">
                     <h1 class="post-title" style="font-size: 4.5rem;">
-                        <%- game?game.title:"404" %>
+                        <%= game?game.title:"404" %>
                     </h1>
                 </div>
             </div>
@@ -22,33 +22,33 @@
                 <h1>Game Not Found</h1>
                 <p>Please Search for Other Games</p>
             <%}else{ %>
-                <article class="col-12 row">
-                    <img class="col-4 img-fluid" src="/api/<%-game['game_pic_url']%>" alt="<%-game['title']%>">
-                    <section class="col-7 offset-1 text-left">
-                        <p><%- game['description']%></p> 
+                <article class="col-12 row grid-item w-75 mx-auto overflow-hidden">
+                    <div class="col-5" style="background-image: url(/api<%=game['game_pic_url'];%>); background-repeat: no-repeat;background-size:contain; background-position:center center;"></div>
+                    <section class="col-6 offset-1 text-left">
+                        <p><%= game['description']%></p> 
                         <%if(type == 'Admin'){%>
-                            <a class="btn btn-primary" href="/admin/game/<%-game['game_id']%>/update">Update Game</a>
-                            <form class="d-inline" method="post" action="/api/game/<%-game['game_id']%>?_method=DELETE" onSubmit="if(!confirm('Do you really want to delete this game?')){return false;}">
-                                <button class="btn btn-danger" type="submit">Delete Game</button>
+                            <a class="btn btn-primary btn-lg" href="/admin/game/<%=game['game_id']%>/update">Update Game</a>
+                            <form class="d-inline" method="post" action="/api/game/<%=game['game_id']%>?_method=DELETE" onSubmit="if(!confirm('Do you really want to delete this game?')){return false;}">
+                                <button class="btn btn-danger btn-lg" type="submit">Delete Game</button>
                             </form>
                         <%}%>
                         <table class="table mb-5">
                             <tbody>
                                 <tr>
                                     <th scope="row">Year</th>
-                                    <td><a href="?year=<%-game['year']%>">
-                                            <%- game['year']%>
+                                    <td><a href="/search?year=<%=game['year']%>">
+                                            <%= game['year']%>
                                         </a></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">Platform</th>
-                                    <td><a href="/search?platform=<%- game['platform']%>">
-                                            <%- game['platform']%>
+                                    <td><a href="/search?platform=<%= game['platform']%>">
+                                            <%= game['platform']%>
                                         </a></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">Categories</th>
-                                    <td><%-game['categories'].join(", ")%></td>
+                                    <td><%-game['categories'].map((cat)=>{return `<a href="/search?cat=${cat}" class="d-inline">${cat}</a>`}).join(', ')%></td>
                                 </tr>
                                 <tr>
                                     <th scope="row">Rating</th>
@@ -70,7 +70,7 @@
                                 </tr>
                             </tbody>
                         </table>
-                        <div class='ribbon mt-5 ' contenteditable='true'>Price : S$ <%- parseFloat(game['price']).toFixed(2)%></div>
+                        <div class='ribbon mt-5 ' contenteditable='true'>Price : S$ <%= parseFloat(game['price']).toFixed(2)%></div>
                     </section>
                 </article>
             <%}%>
@@ -79,10 +79,9 @@
                 <% if(user && game){%>
                     <h3>Leave your Review!</h3>
                     <form method="post"
-                        action='/api/user/<%-uid%>/game/<%-gid%>/review'>
+                        action='/api/user/<%=uid%>/game/<%=gid%>/review'>
                         <textarea name="content" id="content" row='5' cols="100" class="mt-2"
-                            maxlength="512" required <%-type=='Public' ?"disabled":'' %>>
-                        </textarea>
+                            maxlength="512" required <%=type=='Public' ?"disabled":'' %>></textarea>
                         <h5>Rating: <span id="ratingVal">0 </span> Star</h5>
                         <div class="range">
                             <input type="range" name="rating" min="0" max="5"
@@ -94,7 +93,7 @@
                         </div>
                         <button type="submit"
                             class="d-block mx-auto btn btn-dark btn-lg mt-5">Submit
-                            as <em><%-user['username']%></em>
+                            as <em><%=user['username']%></em>
                         </button>
                     </form>
                 <% }else if(game){ %>
@@ -122,7 +121,6 @@
 <script>
     window.addEventListener('load',()=>{
         document.getElementById("rating").addEventListener('change',(e)=>{
-            console.log(document.getElementById("ratingVal"))
             document.getElementById("ratingVal").innerHTML = e.target.value;
         })
     })
