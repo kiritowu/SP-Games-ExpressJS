@@ -205,7 +205,9 @@ This repository contains the web application for my assignment in ST0503 Back-en
     </tbody>
 </table>
 
+## License
+Distributed under the MIT License. See `LICENSE` for more information.
 
-
-
-
+## Contributors
+- Wong Zhao Wu, Bryan 
+- Li Yifan
