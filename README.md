@@ -1,5 +1,5 @@
 # SP GAMES Full-Stack Web Development
-This repository contains the web application for my assignment in ST0503 Back-end Web Development built using MVC framework with **Express + MySQL** as back-end model & controller and **EJS** as front-end view.
+This repository contains the web application for my assignment of ST0503 Back-end Web Development built using MVC framework with **Express + MySQL** as back-end model & controller and **EJS** as front-end view.
 
 ## Getting Started
 1. Clone the repository.
